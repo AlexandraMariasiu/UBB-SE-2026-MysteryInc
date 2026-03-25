@@ -35,6 +35,7 @@ namespace HospitalManagement
         public App()
         {
             InitializeComponent();
+            Configuration.Config.Load();
         }
 
         /// <summary>
