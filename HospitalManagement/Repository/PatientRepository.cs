@@ -21,7 +21,7 @@ namespace HospitalManagement.Repository
 
         public Patient? GetById(int id)
         {
-            string query = $"select * from Patient where PatientID={id}";
+            string query = $"SELECT * FROM Patient WHERE PatientID={id}";
             using (SqlDataReader reader = _context.ExecuteQuery(query))
             {
                 if (reader.Read())
@@ -50,6 +50,22 @@ namespace HospitalManagement.Repository
                 IsArchived = Convert.ToBoolean(reader["Archived"]),
                 IsDonor = Convert.ToBoolean(reader["IsDonor"])
             };
+        }
+
+        public List<Patient> GetArchived()
+        {
+            List<Patient> archivedPatients = new List<Patient>();
+
+            string query = $"SELECT * FROM Patient WHERE Archived=1";
+
+            using (SqlDataReader reader = _context.ExecuteQuery(query))
+            {
+                while (reader.Read())
+                {
+                    archivedPatients.Add(this.MapToPatient(reader));
+                }
+            }
+            return archivedPatients;
         }
     }
 }
