@@ -56,7 +56,7 @@ namespace HospitalManagement.Repository
         {
             List<Patient> patients = new List<Patient>();
 
-
+            
             string query = "SELECT * FROM Patient";
 
             if (!include_archived)
