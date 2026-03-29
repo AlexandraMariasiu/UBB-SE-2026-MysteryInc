@@ -240,5 +240,11 @@ namespace HospitalManagement.Repository
             
         }
 
+        public void MarkAsDeceased(int id, DateOnly dod)
+        {
+            string query = $"UPDATE Patient SET DateOfDeath={dod} WHERE PatientID={id}";
+            _context.ExecuteNonQuery(query);
+        }
+
     }
 }
