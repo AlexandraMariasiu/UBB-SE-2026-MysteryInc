@@ -33,7 +33,7 @@ namespace HospitalManagement.Service
             ValidatePhone(patient.PhoneNo, "Phone Number", isRequired: true, result);
             ValidatePhone(patient.EmergencyContact, "Emergency Contact", isRequired: false, result);
 
-            if (ValidateCnpFormat(patient.Cnp, result))
+            if (ValidateCnp(patient.Cnp, result))
             {
                 ValidateCnpCorrelation(patient.Cnp, patient.Sex, patient.Dob, result);
             }
@@ -75,7 +75,7 @@ namespace HospitalManagement.Service
                 result.AddError($"{field} must be in format +40XXXXXXXXX."); 
         }
 
-        private bool ValidateCnpFormat(string cnp, ValidationResult result)
+        private bool ValidateCnp(string cnp, ValidationResult result)
         {
             bool isValid = true;
 
@@ -105,6 +105,59 @@ namespace HospitalManagement.Service
             string expectedDobPart = dob.ToString("yyMMdd");
             if (cnpDobPart != expectedDobPart)
                 result.AddError("CNP digits 2-7 must match the Date of Birth.");
+        }
+
+        public ValidationResult ValidateMedicalHistory(MedicalHistory history, MedicalHistory? existingHistory = null)
+        {
+            var result = new ValidationResult();
+
+            if (history.PatientId <= 0)
+            {
+                result.AddError("Medical History must be associated with a valid Patient (PatientId is required).");
+            }
+
+            if (existingHistory != null)
+            {
+                if (history.PatientId != existingHistory.PatientId)
+                {
+                    result.AddError("Patient ID cannot be modified on update. A medical history belongs strictly to its original patient.");
+                }
+            }
+
+            if (history.BloodType.HasValue && !Enum.IsDefined(typeof(BloodType), history.BloodType.Value))
+            {
+                result.AddError("Blood Type must be exactly one of the allowed values: A, B, AB, or O.");
+            }
+
+            if (history.Rh.HasValue && !Enum.IsDefined(typeof(RhEnum), history.Rh.Value))
+            {
+                result.AddError("Rh Factor must be strictly Positive or Negative.");
+            }
+
+            if (history.ChronicConditions != null)
+            {
+                int totalLength = history.ChronicConditions.Sum(c => c?.Length ?? 0);
+                if (totalLength > 2000)
+                {
+                    result.AddError("The combined description of chronic conditions cannot exceed 2000 characters.");
+                }
+            }
+
+            if (history.Allergies != null)
+            {
+                string[] allowedSeverities = { "Mild", "Moderate", "Severe", "Anaphylactic" };
+
+                foreach (var allergy in history.Allergies)
+                {
+                    string severity = allergy.SeverityLevel;
+                    if (string.IsNullOrWhiteSpace(severity) || !allowedSeverities.Contains(severity, StringComparer.OrdinalIgnoreCase))
+                    {
+                        result.AddError($"Allergy severity '{severity}' is invalid. Allowed values: Mild, Moderate, Severe, Anaphylactic.");
+                    }
+                }
+            }
+
+            return result;
         }
     }
 }
