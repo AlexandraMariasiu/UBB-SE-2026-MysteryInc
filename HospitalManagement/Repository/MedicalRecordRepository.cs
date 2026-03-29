@@ -7,7 +7,7 @@ using HospitalManagement.Entity.Enums;
 
 namespace HospitalManagement.Repository
 {
-    class MedicalRecordRepository
+    public class MedicalRecordRepository
     {
         private readonly HospitalDbContext _context;
 

@@ -7,8 +7,7 @@ using HospitalManagement.Entity.Enums;
 
 namespace HospitalManagement.Integration
 
-{
-    class PatientFilter
+{   public class PatientFilter
     {
         public string? namePart;
         public string? CNP;

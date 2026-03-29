@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using HospitalManagement.Entity.DTOs;
+﻿using HospitalManagement.Entity.DTOs;
 using HospitalManagement.Entity;
-using HospitalManagement.Repository;
 using HospitalManagement.Service;
 
 namespace HospitalManagement.Integration.PatientObserver
@@ -13,18 +7,16 @@ namespace HospitalManagement.Integration.PatientObserver
     public class PatientSyncObserver : IPatientObserver
     {
         private readonly PatientService _patientService;
-        private readonly PatientRepository _patientRepo;
 
-        public PatientSyncObserver(PatientService patientService, PatientRepository patientRepo)
+        public PatientSyncObserver(PatientService patientService)
         {
             _patientService = patientService;
-            _patientRepo = patientRepo;
         }
 
         public void OnNewExternalPatient(ExternalPatientDTO newPatientData)
         {
             // IN6: check if patient exists by CNP
-            bool exists = _patientRepo.Exists(newPatientData.CNP);
+            bool exists = _patientService.Exists(newPatientData.CNP);
 
             if (exists)
             {
@@ -32,6 +24,7 @@ namespace HospitalManagement.Integration.PatientObserver
                 Patient updated = MapDTOToPatient(newPatientData);
                 _patientService.UpdatePatient(updated);
             }
+
             else
             {
                 // map DTO to new patient and create

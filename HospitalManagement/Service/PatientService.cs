@@ -318,6 +318,10 @@ namespace HospitalManagement.Service
             _patientRepo.Delete(id);
         }
 
+        public bool Exists(string CNP)
+        {
+            return _patientRepo.Exists(CNP);
+        }
        
     }
 }
