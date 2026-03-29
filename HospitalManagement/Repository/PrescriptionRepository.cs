@@ -134,6 +134,58 @@ namespace HospitalManagement.Repository
             }
         }
 
+        // RP19 Update
+        public void Update(Prescription prescription)
+        {
+            if (prescription == null || prescription.Id <= 0)
+                throw new ArgumentException("Invalid prescription data for update.");
+
+            try
+            {
+                _context.BeginTransaction(); 
+
+                string notesValue = prescription.DoctorNotes == null
+                ? "NULL"
+                : $"'{Escape(prescription.DoctorNotes)}'";
+
+                    string dateValue = prescription.Date == default
+                        ? "CONVERT(DATE, GETDATE())"
+                        : $"'{FormatDate(prescription.Date)}'";
+
+                    string sqlUpdateHeader = $@"
+                    UPDATE Prescription 
+                    SET DoctorNotes = {notesValue}, [Date] = {dateValue}
+                    WHERE PrescriptionID = {prescription.Id}";
+
+                    _context.ExecuteNonQuery(sqlUpdateHeader);
+
+                    _context.ExecuteNonQuery($"DELETE FROM PrescriptionItems WHERE PrescriptionID = {prescription.Id}");
+
+                    if (prescription.MedicationList != null)
+                    {
+                        foreach (var item in prescription.MedicationList)
+                        {
+                            string quantityValue = item.Quantity == null
+                                ? "NULL"
+                                : $"'{Escape(item.Quantity)}'";
+
+                            string sqlItem = $@"
+                        INSERT INTO PrescriptionItems (PrescriptionID, MedName, Quantity) 
+                        VALUES ({prescription.Id}, '{Escape(item.MedName)}', {quantityValue})";
+
+                            _context.ExecuteNonQuery(sqlItem);
+                        }
+                    }
+
+                    _context.CommitTransaction(); 
+        }
+                catch
+                {
+                    _context.RollbackTransaction();
+                    throw;
+                }
+        }
+
         // RP21 Pagination
         public List<Prescription> GetTopN(int n, int page)
         {
