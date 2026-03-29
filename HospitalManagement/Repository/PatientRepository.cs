@@ -254,5 +254,16 @@ namespace HospitalManagement.Repository
 
             _context.ExecuteNonQuery(query);
         }
+
+        public void Update(Patient patientToUpdate)
+        {
+            string query = $"UPDATE Patient SET FirstName={patientToUpdate.FirstName}, LastName={patientToUpdate.LastName}," +
+                $"Cnp={patientToUpdate.Cnp}, Dob={patientToUpdate.Dob}, Dod={patientToUpdate.Dod}, Sex={patientToUpdate.Sex}," +
+                $"PhoneNo={patientToUpdate.PhoneNo}, EmergencyContact={patientToUpdate.EmergencyContact}, IsArchived={patientToUpdate.IsArchived}, IsDonor={patientToUpdate.IsDonor}" +
+                $"WHERE PatientID={patientToUpdate.Id}";
+
+            _context.ExecuteNonQuery(query);
+        }
+
     }
 }
