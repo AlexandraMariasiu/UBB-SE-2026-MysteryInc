@@ -53,11 +53,9 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.9.1" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Integration\" />
     <Folder Include="ViewModel\" />
     <Folder Include="View\" />
     <Folder Include="Service\" />
-    <Folder Include="Repository\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="configuration\appsettings.local.json">
