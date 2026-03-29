@@ -1,81 +1,110 @@
 ﻿using HospitalManagement.Entity;
 using HospitalManagement.Entity.Enums;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace HospitalManagement.Service
 {
     public class PatientValidator
     {
+        public void ValidateUpdate(Patient newDetails, Patient existingPatient)
+        {
+            if (newDetails.Cnp != existingPatient.Cnp || newDetails.Dob != existingPatient.Dob)
+            {
+                throw new ValidationException("Identity cannot be modified: CNP and Date of Birth must remain consistent."); 
+            }
+
+            if (existingPatient.IsArchived)
+            {
+                throw new ValidationException("Archived patients cannot be updated unless de-archived."); 
+            }
+        }
+        
         public ValidationResult ValidatePatient(Patient patient)
         {
             var result = new ValidationResult();
-            try
+            //for this line above if there is an error replace with this: var result = new global::ValidationResult();
+
+            ValidateName(patient.FirstName, "First Name", result); 
+            ValidateName(patient.LastName, "Last Name", result); 
+            
+            ValidatePhone(patient.PhoneNo, "Phone Number", isRequired: true, result);
+            ValidatePhone(patient.EmergencyContact, "Emergency Contact", isRequired: false, result);
+
+            if (ValidateCnpFormat(patient.Cnp, result))
             {
-                ValidateName(patient.FirstName, "First Name"); 
-                ValidateName(patient.LastName, "Last Name"); 
-                
-                ValidatePhone(patient.PhoneNo, "Phone Number");
-                ValidatePhone(patient.EmergencyContact, "Emergency Contact");
-
-                ValidateCnpFormat(patient.Cnp); 
-
-                ValidateCnpCorrelation(patient.Cnp, patient.Sex, patient.Dob); 
-
-                if (patient.Dob > DateTime.Now)
-                    throw new ValidationException("Date of Birth cannot be in the future."); 
-
-                if (patient.Dod.HasValue) 
-                {
-                    if (patient.Dod > DateTime.Now)
-                        throw new ValidationException("Date of Death cannot be in the future."); 
-                    if (patient.Dod < patient.Dob)
-                        throw new ValidationException("Date of Death cannot be earlier than Date of Birth."); 
-                }
+                ValidateCnpCorrelation(patient.Cnp, patient.Sex, patient.Dob, result);
             }
-            catch (ValidationException ex)
+
+            if (patient.Dob > DateTime.Now)
+                result.AddError("Date of Birth cannot be in the future."); 
+
+            if (patient.Dod.HasValue) 
             {
-                result.AddError(ex.Message);
+                if (patient.Dod > DateTime.Now)
+                    result.AddError("Date of Death cannot be in the future."); 
+                if (patient.Dod < patient.Dob)
+                    result.AddError("Date of Death cannot be earlier than Date of Birth."); 
             }
+            
             return result;
         }
 
-        private void ValidateName(string name, string field)
+        private void ValidateName(string name, string field, ValidationResult result)
         {
             if (string.IsNullOrWhiteSpace(name) || name.Length > 100)
-                throw new ValidationException($"{field} must be between 1-100 characters."); 
-            if (!System.Text.RegularExpressions.Regex.IsMatch(name, @"^[a-zA-Z\s\-]+$"))
-                throw new ValidationException($"{field} can only contain letters, spaces, and hyphens.");
+            {
+                result.AddError($"{field} must be between 1-100 characters.");
+                return;
+            }
+            
+            if (!Regex.IsMatch(name, @"^[\p{L}\s\-]+$"))
+                result.AddError($"{field} can only contain letters, spaces, and hyphens.");
         }
 
-        private void ValidatePhone(string phone, string field)
+        private void ValidatePhone(string phone, string field, bool isRequired, ValidationResult result)
         {
-            if (string.IsNullOrEmpty(phone) || !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+40\d{9}$"))
-                throw new ValidationException($"{field} must be in format +40XXXXXXXXX."); 
+            if (!isRequired && string.IsNullOrEmpty(phone))
+            {
+                return; // Skip validation if it's optional and empty
+            }
+
+            if (string.IsNullOrEmpty(phone) || !Regex.IsMatch(phone, @"^\+40\d{9}$"))
+                result.AddError($"{field} must be in format +40XXXXXXXXX."); 
         }
 
-        private void ValidateCnpFormat(string cnp)
+        private bool ValidateCnpFormat(string cnp, ValidationResult result)
         {
+            bool isValid = true;
+
             if (string.IsNullOrEmpty(cnp) || cnp.Length != 13 || !cnp.All(char.IsDigit))
-                throw new ValidationException("CNP must be exactly 13 digits.");
-            if (!"1256".Contains(cnp[0]))
-                throw new ValidationException("CNP must start with 1, 2, 5, or 6.");
+            {
+                result.AddError("CNP must be exactly 13 digits.");
+                isValid = false;
+            }
+            else if (!"1256".Contains(cnp[0]))
+            {
+                result.AddError("CNP must start with 1, 2, 5, or 6.");
+                isValid = false;
+            }
+
+            return isValid;
         }
 
-        private void ValidateCnpCorrelation(string cnp, Sex sex, DateTime dob)
+        private void ValidateCnpCorrelation(string cnp, Sex sex, DateTime dob, ValidationResult result)
         {
-            int firstDigit = int.Parse(cnp[0].ToString());
+            int firstDigit = cnp[0] - '0';
             if (sex == Sex.M && firstDigit % 2 == 0)
-                throw new ValidationException("CNP first digit must be odd for Male.");
+                result.AddError("CNP first digit must be odd for Male.");
             if (sex == Sex.F && firstDigit % 2 != 0)
-                throw new ValidationException("CNP first digit must be even for Female."); 
+                result.AddError("CNP first digit must be even for Female."); 
 
             string cnpDobPart = cnp.Substring(1, 6);
             string expectedDobPart = dob.ToString("yyMMdd");
             if (cnpDobPart != expectedDobPart)
-                throw new ValidationException("CNP digits 2-7 must match the Date of Birth.");
+                result.AddError("CNP digits 2-7 must match the Date of Birth.");
         }
     }
 }
