@@ -167,7 +167,6 @@ namespace HospitalManagement.Repository
                 if (pd.MedicalHistory.BloodType == bloodType && pd.MedicalHistory.Rh == rh) score += 50;
                 else score += 25;
 
-
                 if (pd.Sex == sex)
                     score += 20;
                 else score += 10;
@@ -229,5 +228,17 @@ namespace HospitalManagement.Repository
             int score = 30 - (group * 5);
             return Math.Max(score, 0);
         }
+
+        public bool Exists(string CNP)
+        {
+            string query = $"SELECT * FROM Patient WHERE CNP={CNP}";
+
+            using (SqlDataReader reader = _context.ExecuteQuery(query))
+            {
+                return reader.Read();
+            }
+            
+        }
+
     }
 }
