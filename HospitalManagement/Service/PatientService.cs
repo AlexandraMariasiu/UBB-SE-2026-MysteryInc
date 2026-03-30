@@ -8,7 +8,7 @@ using HospitalManagement.Repository;
 
 namespace HospitalManagement.Service
 {
-    internal class PatientService
+    public class PatientService
     {
         private readonly PatientRepository _patientRepo;
 
@@ -317,5 +317,11 @@ namespace HospitalManagement.Service
             // 2. Permanently remove through the repository
             _patientRepo.Delete(id);
         }
+
+        public bool Exists(string CNP)
+        {
+            return _patientRepo.Exists(CNP);
+        }
+       
     }
 }

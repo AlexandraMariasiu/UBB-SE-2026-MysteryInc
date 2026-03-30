@@ -14,4 +14,5 @@ namespace HospitalManagement.Entity
         public string? AllergyType { get; set; }
         public string? AllergyCategory { get; set; }
     }
+
 }
