@@ -14,15 +14,53 @@ namespace HospitalManagement.ViewModel
     {
         private readonly PatientService _patientService;
 
+        // --- The currently clicked patient in the UI ---
+        private Patient _selectedPatient;
+        public Patient SelectedPatient
+        {
+            get => _selectedPatient;
+            set
+            {
+                _selectedPatient = value;
+                OnPropertyChanged();
+            }
+        }
+
         // --- Properties bound to the View ---
         public ObservableCollection<Patient> Patients { get; set; }
 
         public ObservableCollection<Patient> ArchivedPatients { get; set; }
 
+        public Patient NewPatient { get; set; }
+
+        // --- Validation Errors (For the red labels) ---
+        public ObservableCollection<string> ValidationErrors { get; set; }
+
+        private string _cnpError;
+        public string CnpError { get => _cnpError; set { _cnpError = value; OnPropertyChanged(); } }
+
+        private string _phoneError;
+        public string PhoneError { get => _phoneError; set { _phoneError = value; OnPropertyChanged(); } }
+
+        private string _dobError;
+        public string DobError { get => _dobError; set { _dobError = value; OnPropertyChanged(); } }
+
+        // --- The Close Window Notification ---
+        public Action CloseAddPatientWindow { get; set; }
+
+        // --- UI Callbacks ---
+        public Func<string, string, bool> ConfirmAction { get; set; }
+        public Action<string> ShowAlertAction { get; set; } // For the deceased warning
+
         // --- Commands bound to the View Buttons ---
         public ICommand LoadAllPatientsCommand { get; }
 
         public ICommand LoadArchivedPatientsCommand { get; }
+
+        public ICommand AddPatientCommand { get; }
+
+        public ICommand ArchivePatientCommand { get; }
+        public ICommand DearchivePatientCommand { get; }
 
         // --- Constructor ---
         public AdminViewModel(PatientService patientService)
@@ -34,6 +72,13 @@ namespace HospitalManagement.ViewModel
 
             ArchivedPatients = new ObservableCollection<Patient>();
             LoadArchivedPatientsCommand = new RelayCommand(LoadArchivedPatients);
+
+            NewPatient = new Patient { Dob = DateTime.Today };
+            ValidationErrors = new ObservableCollection<string>();
+            AddPatientCommand = new RelayCommand(AddPatient);
+
+            ArchivePatientCommand = new RelayCommand(ArchivePatient);
+            DearchivePatientCommand = new RelayCommand(DearchivePatient);
 
 
         }
@@ -90,6 +135,112 @@ namespace HospitalManagement.ViewModel
                 ArchivedPatients.Add(patient);
             }
         }
+
+        // --- VM8: Add Patient Logic ---
+        private void AddPatient()
+        {
+            // 1. Reset previous errors
+            ValidationErrors.Clear();
+            CnpError = string.Empty;
+            PhoneError = string.Empty;
+            DobError = string.Empty;
+            bool isValid = true;
+
+            // 2. Validate CNP (13 digits + Secondary Service Check)
+            if (string.IsNullOrWhiteSpace(NewPatient.Cnp) || NewPatient.Cnp.Length != 13 || !NewPatient.Cnp.All(char.IsDigit))
+            {
+                CnpError = "CNP must be exactly 13 digits.";
+                ValidationErrors.Add(CnpError);
+                isValid = false;
+            }
+            else if (!_patientService.ValidateCNP(NewPatient.Cnp, NewPatient.Sex, NewPatient.Dob)) // Secondary check
+            {
+                CnpError = "CNP does not match the selected sex or date of birth.";
+                ValidationErrors.Add(CnpError);
+                isValid = false;
+            }
+
+            // 3. Validate Phone (10 digits)
+            if (string.IsNullOrWhiteSpace(NewPatient.PhoneNo) || NewPatient.PhoneNo.Length != 10 || !NewPatient.PhoneNo.All(char.IsDigit))
+            {
+                PhoneError = "Phone must be exactly 10 digits.";
+                ValidationErrors.Add(PhoneError);
+                isValid = false;
+            }
+
+            // 4. Validate Date of Birth (Must be in the past)
+            if (NewPatient.Dob >= DateTime.Today)
+            {
+                DobError = "Date of Birth must be in the past.";
+                ValidationErrors.Add(DobError);
+                isValid = false;
+            }
+
+            // 5. Check if we should stop
+            if (!isValid)
+            {
+                // We update this property to force the UI to refresh the error list
+                OnPropertyChanged(nameof(ValidationErrors));
+                return;
+            }
+
+            // --- SUCCESS PATH ---
+
+            // 6. Map and Create (Assumes your teammate named the method CreatePatient)
+            _patientService.CreatePatient(NewPatient);
+
+            // 7. Refresh the main patient list so the new patient appears instantly
+            LoadAllPatients();
+
+            // 8. Reset the form for the next time it opens
+            NewPatient = new Patient { Dob = DateTime.Today };
+            OnPropertyChanged(nameof(NewPatient));
+
+            // 9. Trigger the CloseWindow notification
+            CloseAddPatientWindow?.Invoke();
+        }
+
+        private void ArchivePatient()
+        {
+            if (SelectedPatient == null) return; // Nobody is selected!
+
+            // 1. Trigger the mandatory confirmation layer
+            // If the View isn't hooked up yet, or they click 'No', we abort.
+            bool isConfirmed = ConfirmAction?.Invoke(
+                $"Are you sure you want to archive {SelectedPatient.FirstName} {SelectedPatient.LastName}?",
+                "Confirm Archive") ?? false;
+
+            if (!isConfirmed) return;
+
+            // 2. Call the Service 
+            _patientService.ArchivePatient(SelectedPatient.Id);
+
+            // 3. Refresh both lists so the patient instantly moves from one grid to the other!
+            LoadAllPatients();
+            LoadArchivedPatients();
+        }
+
+        private void DearchivePatient()
+        {
+            if (SelectedPatient == null) return; // Nobody is selected!
+
+            // 1. Strict Validation: Cannot dearchive deceased patients
+            if (SelectedPatient.IsDeceased)
+            {
+                // Tell the UI to show a warning popup
+                ShowAlertAction?.Invoke("Cannot dearchive this patient. The record indicates the patient is deceased.");
+                return; // Abort the command
+            }
+
+            // 2. Call the Service
+             _patientService.DearchivePatient(SelectedPatient.Id);
+
+            // 3. Refresh both lists so the patient moves back to the active grid!
+            LoadAllPatients();
+            LoadArchivedPatients();
+        }
+
+
 
         // --- INotifyPropertyChanged Implementation ---
         public event PropertyChangedEventHandler PropertyChanged;
