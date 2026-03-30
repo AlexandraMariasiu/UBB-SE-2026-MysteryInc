@@ -16,7 +16,6 @@
         <SolidColorBrush x:Key="BrandAccent" Color="#5EC499"/>
         <SolidColorBrush x:Key="GhostAccent" Color="#FFE779"/>
 
-        <!-- Stil custom buton Filter -->
         <Style x:Key="AccentButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource BrandAccent}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -76,40 +75,42 @@
                  </GridView.ItemsPanel>
 
                  <GridView.ItemTemplate>
-                <DataTemplate x:DataType="entity:Prescription">
-                    <Border Background="White"
+                    <DataTemplate x:DataType="entity:Prescription">
+                        <Border Background="White"
                             BorderBrush="#E5E7EB"
                             BorderThickness="1" CornerRadius="10"
                             Width="330" Height="260" Margin="12" Padding="20">
 
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                            <Button Grid.Row="0" HorizontalAlignment="Center" Background="#F0F9F6" BorderBrush="{ThemeResource BrandAccent}" BorderThickness="1" CornerRadius="20" Padding="12,4">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <FontIcon Glyph="&#xE814;" Foreground="{ThemeResource BrandPrimary}" FontSize="14"/>
-                                    <TextBlock Text="{x:Bind Id}" FontSize="16" FontWeight="Bold" Foreground="{ThemeResource BrandPrimary}" />
-                                </StackPanel>
+                                <!-- PRESCRIPTION ID (Clickable pt Meds List - in middle top) -->
+                                <Button Grid.Row="0" HorizontalAlignment="Center" Background="#F0F9F6" BorderBrush="{ThemeResource BrandAccent}" BorderThickness="1" CornerRadius="20" Padding="12,4">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE814;" Foreground="{ThemeResource BrandPrimary}" FontSize="14"/>
+                                        <TextBlock Text="{x:Bind Id}" FontSize="16" FontWeight="Bold" Foreground="{ThemeResource BrandPrimary}" />
+                                    </StackPanel>
 
-                                <!-- MODIFICAREA 1: Dam Nume acestui Flyout sa il putem ascunde direct -->
-                                <Button.Flyout>
-                                    <Flyout x:Name="MedsFlyout">
-                                        <Flyout.FlyoutPresenterStyle>
-                                            <Style TargetType="FlyoutPresenter">
-                                                <Setter Property="Background" Value="White"/>
-                                                <Setter Property="BorderBrush" Value="#E5E7EB"/>
-                                                <Setter Property="BorderThickness" Value="1"/>
-                                                <Setter Property="CornerRadius" Value="10"/>
-                                                <Setter Property="Padding" Value="0"/>
-                                            </Style>
-                                        </Flyout.FlyoutPresenterStyle>
-                                        <StackPanel Width="280" Padding="15">
-                                            <TextBlock Text="Medication Details" FontWeight="Bold" FontSize="18" Foreground="#1E2A38" Margin="0,0,0,15"/>
-                                            <ListView ItemsSource="{x:Bind MedicationList}" SelectionMode="None">
+                                    <!-- POPUP MESSAGE  -->
+                                    <Button.Flyout>
+                                        <Flyout>
+                                            <Flyout.FlyoutPresenterStyle>
+                                                <Style TargetType="FlyoutPresenter">
+                                                    <Setter Property="Background" Value="White"/>
+                                                    <Setter Property="BorderBrush" Value="#E5E7EB"/>
+                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                    <Setter Property="CornerRadius" Value="10"/>
+                                                    <Setter Property="Padding" Value="0"/>
+                                                </Style>
+                                            </Flyout.FlyoutPresenterStyle>
+                                            <StackPanel Width="280" Padding="15">
+                                                <!-- List with medicine names and prescribed quantity -->
+                                                <TextBlock Text="Medication Details" FontWeight="Bold" FontSize="18" Foreground="#1E2A38" Margin="0,0,0,15"/>
+                                                <ListView ItemsSource="{x:Bind MedicationList}" SelectionMode="None">
                                                     <ListView.ItemTemplate>
                                                         <DataTemplate x:DataType="entity:PrescriptionItem">
                                                             <Grid Margin="0,6">
@@ -128,70 +129,51 @@
                                                         </DataTemplate>
                                                     </ListView.ItemTemplate>
                                                 </ListView>
-                                                
-                                            <!-- MODIFICAREA 2: Am inlocuit MedsFlyout.Hide inapoi cu OnCloseFlyoutClicked -->
-                                            <Button Content="Close Popup" 
-                                                    HorizontalAlignment="Stretch" 
-                                                    Margin="0,20,0,0" 
-                                                    CornerRadius="6" 
-                                                    Click="OnCloseFlyoutClicked">
-                                                <Button.Resources>
-                                                    <!-- Resursele rămân ca să blocheze albirea la Hover -->
-                                                    <SolidColorBrush x:Key="ButtonBackground" Color="#2A6478"/>
-                                                    <SolidColorBrush x:Key="ButtonForeground" Color="White"/>
-                                                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#2A6478" Opacity="0.9"/>
-                                                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
-                                                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#1E2A38" />
-                                                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
-                                                </Button.Resources>
-                                            </Button>
-                                        </StackPanel>
-                                    </Flyout>
-                                </Button.Flyout>
-                            </Button>
+                                            </StackPanel>
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
 
-                            <StackPanel Grid.Row="1" Margin="0,15,0,0" Spacing="6">
-                                <TextBlock FontSize="14">
+                                <StackPanel Grid.Row="1" Margin="0,15,0,0" Spacing="6">
+                                    <TextBlock FontSize="14">
                                     <Run Text="Patient: " FontWeight="SemiBold" Foreground="#1E2A38"/>
                                     <Run Text="{x:Bind PatientName}" Foreground="#4B5563"/>
-                                </TextBlock>
-                                <TextBlock FontSize="14">
+                                    </TextBlock>
+                                    <TextBlock FontSize="14">
                                     <Run Text="Doctor: " FontWeight="SemiBold" Foreground="#1E2A38"/>
                                     <Run Text="Unknown Doctor" Foreground="#4B5563"/>
-                                </TextBlock>
-                                <TextBlock Margin="0,5,0,0">
-                                    <Run Text="Instructions:" FontWeight="SemiBold" Foreground="#1E2A38"/>
-                                </TextBlock>
-                                <TextBlock Text="{x:Bind DoctorNotes}" TextWrapping="Wrap" MaxLines="3" Foreground="#4B5563" FontSize="13"/>
-                            </StackPanel>
-
-                            <Border Grid.Row="2" Background="#F4F6F8" CornerRadius="4" Padding="8,4" HorizontalAlignment="Right">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <FontIcon Glyph="&#xE787;" FontSize="12" Foreground="#6B7280"/>
-                                    <TextBlock Foreground="#6B7280" FontSize="12" FontWeight="SemiBold">
-                                        <Run Text="{x:Bind Date.ToString()}"/>
                                     </TextBlock>
+                                    <TextBlock Margin="0,5,0,0">
+                                    <Run Text="Instructions:" FontWeight="SemiBold" Foreground="#1E2A38"/>
+                                    </TextBlock>
+                                    <TextBlock Text="{x:Bind DoctorNotes}" TextWrapping="Wrap" MaxLines="3" Foreground="#4B5563" FontSize="13"/>
                                 </StackPanel>
-                            </Border>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </GridView.ItemTemplate>
+
+                                <Border Grid.Row="2" Background="#F4F6F8" CornerRadius="4" Padding="8,4" HorizontalAlignment="Right">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE787;" FontSize="12" Foreground="#6B7280"/>
+                                        <TextBlock Foreground="#6B7280" FontSize="12" FontWeight="SemiBold">
+                                        <Run Text="{x:Bind Date.ToString()}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </GridView.ItemTemplate>
 
              </GridView>
         </ScrollViewer>
 
-        <!-- PAGINATION SECTION: Prev / Next -->
+        <!-- PAGINATION SECTION -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="30" Margin="0,20,0,0">
             <!-- PREVIOUS BUTTON -->
             <Button Command="{Binding PreviousPageCommand}" Click="OnPrevClicked" Width="110" Height="40" CornerRadius="20" Background="#00a896" BorderThickness="0" Foreground="White">
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackground" Color="#00a896"/>
                     <SolidColorBrush x:Key="ButtonForeground" Color="White"/>
-                    <!-- Hover Color -->
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#028090"/>
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
-                    <!-- Pressed Color -->
                     <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#005C66"/>
                     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
                 </Button.Resources>
@@ -201,7 +183,6 @@
                 </StackPanel>
             </Button>
             
-            <!-- PAGE INDICATOR -->
             <Border Background="{StaticResource BrandDark}" CornerRadius="20" Padding="20,0" Height="40">
                 <TextBlock FontSize="14" VerticalAlignment="Center" Foreground="White" FontWeight="Bold">
                     <Run Text="PAGE "/>
@@ -214,11 +195,9 @@
                 <Button.Resources>
                     <SolidColorBrush x:Key="ButtonBackground" Color="#00a896"/>
                     <SolidColorBrush x:Key="ButtonForeground" Color="White"/>
-                    <!-- Hover Color -->
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#028090"/>
                     <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
-                    <!-- Pressed Color -->
-                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#005C66"/> <!-- O umbra mica si mai inchisa la apasare -->
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#005C66"/>
                     <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
                 </Button.Resources>
                 <StackPanel Orientation="Horizontal" Spacing="8">

@@ -7,7 +7,6 @@ namespace HospitalManagement.View
 {
     public sealed partial class PrescriptionView : UserControl
     {
-        // Instantiat din clasa Parent (PharmacistView/Model) la lansare
         public ViewModel.PrescriptionViewModel ViewModel { get; set; }
 
         public PrescriptionView()
@@ -37,34 +36,6 @@ namespace HospitalManagement.View
         private void OnPrevClicked(object sender, RoutedEventArgs e)
         {
             ViewModel?.PrevPage();
-        }
-
-        private void OnCloseFlyoutClicked(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn)
-            {
-                // Un FlyoutPresenter e panoul ascuns de sistem unde stã tot con?inutul tãu (StackPanel-ul).
-                // WinUI ne lasã sã tragem container-ul în care stã acest Buton direct.
-                if (btn.Parent is DependencyObject obj)
-                {
-                    // Cãutãm în ascenden?ã foarte rapid direct spre FlyoutPresenter-ul nativ
-                    var presenter = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(obj);
-                    while (presenter != null && !(presenter is Microsoft.UI.Xaml.Controls.FlyoutPresenter))
-                    {
-                        presenter = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(presenter);
-                    }
-
-                    // Ne for?ãm la cel mai apropiat Popup din sistem ?i îl oprim
-                    if (presenter is Microsoft.UI.Xaml.Controls.FlyoutPresenter fp)
-                    {
-                        var popup = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(fp) as Microsoft.UI.Xaml.Controls.Primitives.Popup;
-                        if (popup != null)
-                        {
-                            popup.IsOpen = false;
-                        }
-                    }
-                }
-            }
         }
     }
 }
