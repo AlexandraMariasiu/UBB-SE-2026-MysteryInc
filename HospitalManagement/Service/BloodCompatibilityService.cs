@@ -82,7 +82,7 @@ namespace HospitalManagement.Service
                 .ToList();
         }
 
-        private int CalculateScore(Patient donor, Patient recipient)
+        public int CalculateScore(Patient donor, Patient recipient)
         {
             int total = 0;
 
