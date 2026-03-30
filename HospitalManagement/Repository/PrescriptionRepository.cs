@@ -196,8 +196,17 @@ namespace HospitalManagement.Repository
             int offset = (page - 1) * n;
 
             string sql = $@"
-                SELECT * FROM Prescription
-                ORDER BY [Date] DESC
+                SELECT 
+                    p.PrescriptionID, 
+                    p.RecordID, 
+                    p.DoctorNotes, 
+                    p.[Date],
+                    pat.FirstName + ' ' + pat.LastName AS PatientName
+                FROM Prescription p
+                JOIN MedicalRecord mr ON p.RecordID = mr.RecordID
+                JOIN MedicalHistory mh ON mr.HistoryID = mh.HistoryID
+                JOIN Patient pat ON mh.PatientID = pat.PatientID
+                ORDER BY p.[Date] DESC
                 OFFSET {offset} ROWS FETCH NEXT {n} ROWS ONLY";
 
             var list = new List<Prescription>();
@@ -206,14 +215,22 @@ namespace HospitalManagement.Repository
             {
                 while (reader.Read())
                 {
-                    list.Add(new Prescription
+                    var prescription = new Prescription
                     {
                         Id = (int)reader["PrescriptionID"],
                         RecordId = (int)reader["RecordID"],
                         DoctorNotes = reader["DoctorNotes"] == DBNull.Value ? null : reader["DoctorNotes"].ToString(),
-                        Date = (DateTime)reader["Date"]
-                    });
+                        Date = (DateTime)reader["Date"],
+                        PatientName = reader["PatientName"].ToString() 
+                    };
+                    
+                    list.Add(prescription);
                 }
+            } 
+
+            foreach (var rx in list)
+            {
+                rx.MedicationList = GetItems(rx.Id);
             }
 
             return list;
@@ -257,14 +274,17 @@ namespace HospitalManagement.Repository
             var list = new List<Prescription>();
 
             string sql = @"
-                SELECT DISTINCT p.*
+                SELECT DISTINCT 
+                    p.PrescriptionID, 
+                    p.RecordID, 
+                    p.DoctorNotes, 
+                    p.[Date],
+                    pat.FirstName + ' ' + pat.LastName AS PatientName
                 FROM Prescription p
                 LEFT JOIN PrescriptionItems pi ON p.PrescriptionID = pi.PrescriptionID
                 LEFT JOIN MedicalRecord mr ON p.RecordID = mr.RecordID
                 LEFT JOIN MedicalHistory mh ON mr.HistoryID = mh.HistoryID
                 LEFT JOIN Patient pat ON mh.PatientID = pat.PatientID
-                -- TODO: Restore LEFT JOIN Doctor table once it is created in the database
-                -- LEFT JOIN Doctor d ON mr.StaffID = d.DoctorID
                 WHERE 1=1 AND (pat.Archived = 0 OR pat.Archived IS NULL)";
 
             if (filter.PrescriptionId.HasValue)
@@ -273,7 +293,6 @@ namespace HospitalManagement.Repository
             if (filter.PatientId.HasValue)
                 sql += $" AND pat.PatientID = {filter.PatientId.Value}";
 
-            // Temporarily use mr.StaffID pending the Doctor table
             if (filter.DoctorId.HasValue)
                 sql += $" AND mr.StaffID = {filter.DoctorId.Value}";
 
@@ -286,47 +305,44 @@ namespace HospitalManagement.Repository
             if (filter.DateTo.HasValue)
                 sql += $" AND p.[Date] <= '{FormatDate(filter.DateTo.Value)}'";
 
-            if (!string.IsNullOrWhiteSpace(filter.PatientName))
+
+            if (!string.IsNullOrWhiteSpace(filter.PatientName)) 
             {
-                string name = Escape(filter.PatientName);
-                sql += $" AND (pat.FirstName LIKE '%{name}%' OR pat.LastName LIKE '%{name}%')";
-            }
+                string searchString = filter.PatientName; 
+                string[] nameParts = Escape(searchString).Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                var searchTerm = searchString.ToLower();
 
-            // TODO: Restore DoctorName filter once the Doctor table is created
-            // if (!string.IsNullOrWhiteSpace(filter.DoctorName))
-            // {
-            //     string name = Escape(filter.DoctorName);
-            //     sql += $" AND (d.FirstName LIKE '%{name}%' OR d.LastName LIKE '%{name}%')";
-            // }
-
-            // Using the fake DTO list to resolve doctor names to IDs
-            if (!string.IsNullOrWhiteSpace(filter.DoctorName))
-            {
-                var searchTerm = filter.DoctorName.ToLower();
-
-                // 1. Find matching fake doctors in C#
                 var matchingDoctorIds = MockDoctorProvider.GetFakeDoctors()
                     .Where(d => d.FirstName.ToLower().Contains(searchTerm) || 
                                 d.LastName.ToLower().Contains(searchTerm))
                     .Select(d => d.DoctorId)
                     .ToList();
 
-                // 2. Add them to SQL using the IN clause on mr.StaffID
-                if (matchingDoctorIds.Count > 0)
+                string doctorInClause = matchingDoctorIds.Count > 0 
+                                      ? $"mr.StaffID IN ({string.Join(",", matchingDoctorIds)})" 
+                                      : "1=0"; 
+
+                string patientLikeClause = "";
+                if (nameParts.Length > 0)
                 {
-                    string idList = string.Join(",", matchingDoctorIds);
-                    sql += $" AND mr.StaffID IN ({idList})";
+                    patientLikeClause = "(";
+                    for (int i = 0; i < nameParts.Length; i++)
+                    {
+                        if (i > 0) patientLikeClause += " AND ";
+                        patientLikeClause += $"(pat.FirstName LIKE '%{nameParts[i]}%' OR pat.LastName LIKE '%{nameParts[i]}%')";
+                    }
+                    patientLikeClause += ")";
                 }
-                else
+                else 
                 {
-                    // If a name was typed but no fake doctors match, return empty results
-                    sql += " AND 1=0"; 
+                    patientLikeClause = "1=0";
                 }
+
+                sql += $" AND ({patientLikeClause} OR {doctorInClause})";
             }
 
             sql += " ORDER BY p.[Date] DESC";
 
-            // ... execution logic below remains the same
             using (var reader = _context.ExecuteQuery(sql))
             {
                 while (reader.Read())
@@ -336,12 +352,17 @@ namespace HospitalManagement.Repository
                         Id = (int)reader["PrescriptionID"],
                         RecordId = (int)reader["RecordID"],
                         DoctorNotes = reader["DoctorNotes"] == DBNull.Value ? null : reader["DoctorNotes"].ToString(),
-                        Date = (DateTime)reader["Date"]
+                        Date = (DateTime)reader["Date"],
+                        PatientName = reader["PatientName"] == DBNull.Value ? "Unknown" : reader["PatientName"].ToString()
                     };
 
-                    prescription.MedicationList = GetItems(prescription.Id);
                     list.Add(prescription);
                 }
+            }
+
+            foreach (var rx in list)
+            {
+                rx.MedicationList = GetItems(rx.Id);
             }
 
             return list;
