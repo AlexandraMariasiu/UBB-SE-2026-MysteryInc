@@ -14,6 +14,18 @@ namespace HospitalManagement.ViewModel
     {
         private readonly PatientService _patientService;
 
+        // --- The currently clicked patient in the UI ---
+        private Patient _selectedPatient;
+        public Patient SelectedPatient
+        {
+            get => _selectedPatient;
+            set
+            {
+                _selectedPatient = value;
+                OnPropertyChanged();
+            }
+        }
+
         // --- Properties bound to the View ---
         public ObservableCollection<Patient> Patients { get; set; }
 
@@ -36,12 +48,19 @@ namespace HospitalManagement.ViewModel
         // --- The Close Window Notification ---
         public Action CloseAddPatientWindow { get; set; }
 
+        // --- UI Callbacks ---
+        public Func<string, string, bool> ConfirmAction { get; set; }
+        public Action<string> ShowAlertAction { get; set; } // For the deceased warning
+
         // --- Commands bound to the View Buttons ---
         public ICommand LoadAllPatientsCommand { get; }
 
         public ICommand LoadArchivedPatientsCommand { get; }
 
         public ICommand AddPatientCommand { get; }
+
+        public ICommand ArchivePatientCommand { get; }
+        public ICommand DearchivePatientCommand { get; }
 
         // --- Constructor ---
         public AdminViewModel(PatientService patientService)
@@ -57,6 +76,9 @@ namespace HospitalManagement.ViewModel
             NewPatient = new Patient { Dob = DateTime.Today };
             ValidationErrors = new ObservableCollection<string>();
             AddPatientCommand = new RelayCommand(AddPatient);
+
+            ArchivePatientCommand = new RelayCommand(ArchivePatient);
+            DearchivePatientCommand = new RelayCommand(DearchivePatient);
 
 
         }
@@ -177,6 +199,48 @@ namespace HospitalManagement.ViewModel
             // 9. Trigger the CloseWindow notification
             CloseAddPatientWindow?.Invoke();
         }
+
+        private void ArchivePatient()
+        {
+            if (SelectedPatient == null) return; // Nobody is selected!
+
+            // 1. Trigger the mandatory confirmation layer
+            // If the View isn't hooked up yet, or they click 'No', we abort.
+            bool isConfirmed = ConfirmAction?.Invoke(
+                $"Are you sure you want to archive {SelectedPatient.FirstName} {SelectedPatient.LastName}?",
+                "Confirm Archive") ?? false;
+
+            if (!isConfirmed) return;
+
+            // 2. Call the Service 
+            _patientService.ArchivePatient(SelectedPatient.Id);
+
+            // 3. Refresh both lists so the patient instantly moves from one grid to the other!
+            LoadAllPatients();
+            LoadArchivedPatients();
+        }
+
+        private void DearchivePatient()
+        {
+            if (SelectedPatient == null) return; // Nobody is selected!
+
+            // 1. Strict Validation: Cannot dearchive deceased patients
+            if (SelectedPatient.IsDeceased)
+            {
+                // Tell the UI to show a warning popup
+                ShowAlertAction?.Invoke("Cannot dearchive this patient. The record indicates the patient is deceased.");
+                return; // Abort the command
+            }
+
+            // 2. Call the Service
+             _patientService.DearchivePatient(SelectedPatient.Id);
+
+            // 3. Refresh both lists so the patient moves back to the active grid!
+            LoadAllPatients();
+            LoadArchivedPatients();
+        }
+
+
 
         // --- INotifyPropertyChanged Implementation ---
         public event PropertyChangedEventHandler PropertyChanged;
