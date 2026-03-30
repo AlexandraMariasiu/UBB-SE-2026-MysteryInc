@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 using HospitalManagement.Entity;
-using Microsoft.UI.Xaml.Documents;
-using Windows.Data.Pdf;
+
+using iText.Kernel.Pdf;
+using iText.Layout;
+using iText.Layout.Element;
+
+using Paragraph = iText.Layout.Element.Paragraph;
+
 
 namespace HospitalManagement.Integration.Export
 {
@@ -28,7 +29,7 @@ namespace HospitalManagement.Integration.Export
             {
                 // Header
                 doc.Add(new Paragraph($"Patient: {patient.FirstName} {patient.LastName}")
-                    .SetFontSize(16).SetBold());
+                    .SetFontSize(16));
                 doc.Add(new Paragraph($"CNP: {patient.Cnp}"));
                 doc.Add(new Paragraph($"Consultation Date: {record.ConsultationDate:dd-MM-yyyy HH:mm}"));
 
@@ -36,7 +37,7 @@ namespace HospitalManagement.Integration.Export
 
                 // Section 1 — Clinical findings
                 doc.Add(new Paragraph("Section 1: Clinical Findings")
-                    .SetFontSize(14).SetBold());
+                    .SetFontSize(14));
                 doc.Add(new Paragraph($"Symptoms: {record.Symptoms ?? "N/A"}"));
                 doc.Add(new Paragraph($"Diagnosis: {record.Diagnosis ?? "N/A"}"));
 
@@ -44,7 +45,7 @@ namespace HospitalManagement.Integration.Export
 
                 // Section 2 — Prescribed treatment
                 doc.Add(new Paragraph("Section 2: Prescribed Treatment")
-                    .SetFontSize(14).SetBold());
+                    .SetFontSize(14));
 
                 if (prescription == null || items.Count == 0)
                 {
@@ -53,7 +54,7 @@ namespace HospitalManagement.Integration.Export
                 else
                 {
                     doc.Add(new Paragraph($"Doctor Notes: {prescription.DoctorNotes ?? "None"}"));
-                    doc.Add(new Paragraph("Medications:").SetBold());
+                    doc.Add(new Paragraph("Medications:"));
                     foreach (var item in items)
                     {
                         doc.Add(new Paragraph($"  - {item.MedName}: {item.Quantity}"));
