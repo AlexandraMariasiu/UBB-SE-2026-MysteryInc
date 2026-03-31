@@ -1,12 +1,16 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Runtime.InteropServices;
 
 namespace HospitalManagement.View
 {
     public sealed partial class AddictView : UserControl
     {
         public ViewModel.AddictViewModel ViewModel { get; set; }
+
+        [DllImport("user32.dll")]
+        public static extern bool MessageBeep(uint uType);
 
         public AddictView()
         {
@@ -26,7 +30,7 @@ namespace HospitalManagement.View
                     
                     Content = new ScrollViewer 
                     {
-                        MaxHeight = 500, 
+                        MaxHeight = 450, 
                         Content = new Border
                         {
                             Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 250, 250, 250)),
@@ -48,20 +52,36 @@ namespace HospitalManagement.View
                         }
                     },
                     
-                    CloseButtonText = "Acknowledge & Close",
-                    DefaultButton = ContentDialogButton.Close, 
+                    CloseButtonText = "Cancel",
                     
+                    PrimaryButtonText = "Send Alert",
+                    
+                    DefaultButton = ContentDialogButton.Primary, 
                     RequestedTheme = ElementTheme.Light
                 };
 
                 dialog.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
 
-                dialog.Resources["ContentDialogCloseButtonBackground"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 220, 38, 38)); 
-                dialog.Resources["ContentDialogCloseButtonForeground"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
-                
-                dialog.Resources["ContentDialogCloseButtonBackgroundPointerOver"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 185, 28, 28));
+                dialog.Resources["ContentDialogPrimaryButtonBackground"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 220, 38, 38)); 
+                dialog.Resources["ContentDialogPrimaryButtonForeground"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White);
+                dialog.Resources["ContentDialogPrimaryButtonBackgroundPointerOver"] = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 185, 28, 28));
 
-                await dialog.ShowAsync();
+                ContentDialogResult result = await dialog.ShowAsync();
+
+                if (result == ContentDialogResult.Primary)
+                {
+                 
+                    _ = System.Threading.Tasks.Task.Run(() =>
+                    {
+                        Console.Beep(1200, 200); 
+                        Console.Beep(800, 200);  
+                        Console.Beep(1200, 200); 
+                        Console.Beep(800, 200);  
+                        Console.Beep(1500, 500);
+                    });
+
+                    ViewModel.RemoveFlaggedPatient(patientId);
+                }
             }
         }
     }

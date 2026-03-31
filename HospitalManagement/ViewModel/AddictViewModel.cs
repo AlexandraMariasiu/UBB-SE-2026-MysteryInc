@@ -60,5 +60,17 @@ namespace HospitalManagement.ViewModel
 
             return _addictDetectionService.BuildPoliceReport(targetPatient);
         }
+
+        public void RemoveFlaggedPatient(int patientId)
+        {
+            var targetPatient = AddictCandidates.FirstOrDefault(p => p.Id == patientId);
+            
+            if (targetPatient != null)
+            {
+                AddictCandidates.Remove(targetPatient);
+                
+                // pe viitor, daca se cere la backend, aici am putea schimba starea in baza de date ca ex: "Reported = true"
+            }
+        }
     }
 }
