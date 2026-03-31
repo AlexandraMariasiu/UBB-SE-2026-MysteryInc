@@ -37,26 +37,62 @@ namespace HospitalManagement.ViewModel
             
             ActiveFilter = new PrescriptionFilter();
             CurrentPage = 1;
+            LoadPrescriptions();
         }
 
-        public void LoadPrescriptions()
+        public void UpdatePageData()
         {
             Prescriptions.Clear();
-            InfoMessage = string.Empty; 
+            InfoMessage = string.Empty;
 
-            var latestOrders = _prescriptionService.GetLatestPrescriptions(PageSize, CurrentPage);
+            var fakeDoctors = HospitalManagement.Repository.MockDoctorProvider.GetFakeDoctors();
+            var random = new Random();
 
-            foreach (var order in latestOrders)
+            bool hasActiveFilter = 
+                ActiveFilter.PrescriptionId.HasValue || 
+                !string.IsNullOrWhiteSpace(ActiveFilter.MedName) ||
+                ActiveFilter.DateFrom.HasValue || 
+                ActiveFilter.DateTo.HasValue || 
+                !string.IsNullOrWhiteSpace(ActiveFilter.PatientName) || 
+                !string.IsNullOrWhiteSpace(ActiveFilter.DoctorName);
+
+            List<Prescription> targetList;
+
+            if (hasActiveFilter)
             {
-                Prescriptions.Add(order);
+                var allFilteredResults = _prescriptionService.ApplyFilter(ActiveFilter);
+                targetList = allFilteredResults
+                                    .Skip((CurrentPage - 1) * PageSize)
+                                    .Take(PageSize)
+                                    .ToList();
             }
+            else
+            {
+                targetList = _prescriptionService.GetLatestPrescriptions(PageSize, CurrentPage);
+            }
+
+            foreach (var item in targetList)
+            {
+                if (string.IsNullOrEmpty(item.DoctorName) || item.DoctorName.Contains("Unknown"))
+                {
+                    var randomDoc = fakeDoctors[random.Next(fakeDoctors.Count)];
+                    item.DoctorName = $"Dr. {randomDoc.FirstName} {randomDoc.LastName}";
+                }
+                
+                Prescriptions.Add(item);
+            }
+        }
+
+        public void LoadPrescriptions() 
+        {
+            CurrentPage = 1;
+            UpdatePageData();
         }
 
         public void ApplyFilterCommand(int? searchId, string? medName, DateTime? dateFrom, DateTime? dateTo, string? patientName, string? doctorName)
         {
             InfoMessage = string.Empty;
-            CurrentPage = 1;
-            Prescriptions.Clear();
+            CurrentPage = 1; 
 
             ActiveFilter.PrescriptionId = searchId;
             ActiveFilter.MedName = medName;
@@ -67,18 +103,11 @@ namespace HospitalManagement.ViewModel
 
             try
             {
-                var results = _prescriptionService.ApplyFilter(ActiveFilter);
+                UpdatePageData();
 
-                if (results == null || results.Count == 0)
+                if (Prescriptions.Count == 0)
                 {
                     InfoMessage = "No prescriptions found matching those criteria.";
-                }
-                else
-                {
-                    foreach (var res in results)
-                    {
-                        Prescriptions.Add(res);
-                    }
                 }
             }
             catch (Exception ex)
@@ -92,7 +121,7 @@ namespace HospitalManagement.ViewModel
             if (Prescriptions.Count == PageSize)
             {
                 CurrentPage++;
-                LoadPrescriptions();
+                UpdatePageData();
             }
         }
 
@@ -101,7 +130,7 @@ namespace HospitalManagement.ViewModel
             if (CurrentPage > 1)
             {
                 CurrentPage--;
-                LoadPrescriptions();
+                UpdatePageData();
             }
         }
         
