@@ -41,7 +41,7 @@ namespace HospitalManagement.ViewModel
             }
         }
 
-     
+    
 
         // Formats the List<string> into readable text
         public string FormattedChronicConditions

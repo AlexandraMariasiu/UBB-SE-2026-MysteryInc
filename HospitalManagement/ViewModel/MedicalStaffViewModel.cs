@@ -9,6 +9,7 @@ using HospitalManagement.Integration;
 using HospitalManagement.Service;
 using HospitalManagement.Database;
 using HospitalManagement.Repository;
+using Microsoft.UI.Xaml;
 
 namespace HospitalManagement.ViewModel
 {
@@ -118,7 +119,15 @@ namespace HospitalManagement.ViewModel
         private void FindBloodDonors()
         {
             if (SelectedPatient == null) return;
-            // Logic to calculate and display donors will go here
+
+            // Create the new Window
+            var donorsWindow = new Window();
+            donorsWindow.Title = $"Compatible Donors - {SelectedPatient.FirstName} {SelectedPatient.LastName}";
+
+            // Launch your brand new page!
+            var donorsPage = new HospitalManagement.View.BloodDonorsView(SelectedPatient.Id);
+            donorsWindow.Content = donorsPage;
+            donorsWindow.Activate();
         }
 
         private void RequestTransplant()
