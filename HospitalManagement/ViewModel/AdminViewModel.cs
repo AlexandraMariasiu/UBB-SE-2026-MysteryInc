@@ -8,6 +8,8 @@ using HospitalManagement.Entity;
 using HospitalManagement.Entity.Enums;
 using HospitalManagement.Integration;
 using HospitalManagement.Service;
+using System.Threading.Tasks;
+
 
 namespace HospitalManagement.ViewModel
 {
@@ -29,6 +31,21 @@ namespace HospitalManagement.ViewModel
         public ICommand NavigateToStatisticsCommand { get; }
 
         private readonly PatientService _patientService;
+        private readonly GhostService _ghostService;
+
+        // --- Ghost logic ---
+        private bool _isExorcismAlertVisible;
+        public bool IsExorcismAlertVisible
+        {
+            get => _isExorcismAlertVisible;
+            set { _isExorcismAlertVisible = value; OnPropertyChanged(); }
+        }
+        public ICommand GhostSightingCommand { get; }
+
+
+
+
+
 
         // --- The currently clicked patient in the UI ---
         private Patient _selectedPatient;
@@ -40,6 +57,8 @@ namespace HospitalManagement.ViewModel
                 _selectedPatient = value;
                 OnPropertyChanged();
 
+                OnPropertyChanged(nameof(IsNotDeceased));
+
                 if (_selectedPatient != null)
                 {
                     // Create the shallow copy for editing
@@ -48,10 +67,12 @@ namespace HospitalManagement.ViewModel
                         Id = _selectedPatient.Id,
                         FirstName = _selectedPatient.FirstName, // Read-only in UI
                         LastName = _selectedPatient.LastName,   // Read-only in UI
-                        Cnp = _selectedPatient.Cnp,             // Read-only in UI
+                        Cnp = _selectedPatient.Cnp,
+                        Dob = _selectedPatient.Dob,              // Read-only in UI
                         Sex = _selectedPatient.Sex,             // Editable
                         PhoneNo = _selectedPatient.PhoneNo,     // Editable
-                        EmergencyContact = _selectedPatient.EmergencyContact // Editable
+                        EmergencyContact = _selectedPatient.EmergencyContact, // Editable
+                        Dod = _selectedPatient.Dod
                     };
                 }
             }
@@ -90,22 +111,22 @@ namespace HospitalManagement.ViewModel
         public ICommand SearchPatientCommand { get; }
 
         // --- VM13: Filter Properties ---
-        private int? _minAge;
-        public int? MinAge
+        private double? _minAge;
+        public double? MinAge
         {
             get => _minAge;
             set { _minAge = value; OnPropertyChanged(); }
         }
 
-        private int? _maxAge;
-        public int? MaxAge
+        private double? _maxAge;
+        public double? MaxAge
         {
             get => _maxAge;
             set { _maxAge = value; OnPropertyChanged(); }
         }
 
-        private Sex? _selectedSexFilter;
-        public Sex? SelectedSexFilter
+        private object _selectedSexFilter;
+        public object SelectedSexFilter
         {
             get => _selectedSexFilter;
             set { _selectedSexFilter = value; OnPropertyChanged(); }
@@ -145,13 +166,13 @@ namespace HospitalManagement.ViewModel
         }
 
         // This property will be used in XAML to disable buttons: IsEnabled="{Binding IsNotDeceased}"
-        public Func<string, string, DateTime?> RequestDateAction { get; set; }
+        public Func<string, string,Task<DateTime?>> RequestDateAction { get; set; }
         public bool IsNotDeceased => SelectedPatient != null && !SelectedPatient.IsDeceased;
 
         public ICommand MarkAsDeceasedCommand { get; }
 
         // --- UI Callbacks ---
-        public Func<string, string, bool> ConfirmAction { get; set; }
+        public Func<string, string, Task<bool>> ConfirmAction { get; set; }
         public Action<string> ShowAlertAction { get; set; } // For the deceased warning
         public Action<Patient> OpenOrganDonorDialogAction { get; set; } // For opening organ donor dialog
 
@@ -199,6 +220,16 @@ namespace HospitalManagement.ViewModel
             OpenOrganDonorCommand = new RelayCommand(OpenOrganDonorDialog);
             ReportGhostCommand = new RelayCommand(ReportGhost);
             NavigateToHomeCommand = new RelayCommand(() => { /* This gets overwritten by MainWindow */ });
+
+            // Ghost addition
+            _ghostService = GhostService.Instance;
+            _ghostService.ExorcismTriggered += (s, e) => IsExorcismAlertVisible = true;
+            GhostSightingCommand = new RelayCommand(() => _ghostService.SawAGhost());
+            IsExorcismAlertVisible = _ghostService.IsExorcismTriggered();
+
+
+
+
 
             LoadAllPatients();
 
@@ -291,7 +322,7 @@ namespace HospitalManagement.ViewModel
             }
 
             // --- Check Phone (10 Digits) ---
-            if (string.IsNullOrWhiteSpace(NewPatient.PhoneNo) || NewPatient.PhoneNo.Length != 10)
+            if (string.IsNullOrWhiteSpace(NewPatient.PhoneNo) || NewPatient.PhoneNo.Length != 10 || !NewPatient.PhoneNo.All(char.IsDigit))
             {
                 ValidationErrors.Add("Phone number must be exactly 10 digits.");
                 isValid = false;
@@ -332,15 +363,19 @@ namespace HospitalManagement.ViewModel
                 ShowAlertAction?.Invoke($"Database Error: {ex.Message}");
             }
         }
-        private void ArchivePatient()
+        private async void ArchivePatient()
         {
             if (SelectedPatient == null) return; // Nobody is selected!
 
             // 1. Trigger the mandatory confirmation layer
             // If the View isn't hooked up yet, or they click 'No', we abort.
-            bool isConfirmed = ConfirmAction?.Invoke(
+            // 1. Invoke the action (might be null)
+            var confirmTask = ConfirmAction?.Invoke(
                 $"Are you sure you want to archive {SelectedPatient.FirstName} {SelectedPatient.LastName}?",
-                "Confirm Archive") ?? false;
+                "Confirm Archive");
+
+            // 2. If it's not null, wait for the result. If it IS null, default to false.
+            bool isConfirmed = confirmTask != null ? await confirmTask : false;
 
             if (!isConfirmed) return;
 
@@ -375,16 +410,20 @@ namespace HospitalManagement.ViewModel
         // --- VM10: Update Patient ---
         private void UpdatePatient()
         {
+           
             if (EditingPatient == null || SelectedPatient == null) return;
 
             // 1. (Optional) Re-run phone formatting before saving
-            EditingPatient.PhoneNo = FormatPhoneNumber(EditingPatient.PhoneNo);
-            EditingPatient.EmergencyContact = FormatPhoneNumber(EditingPatient.EmergencyContact);
+            //EditingPatient.PhoneNo = FormatPhoneNumber(EditingPatient.PhoneNo);
+            //EditingPatient.EmergencyContact = FormatPhoneNumber(EditingPatient.EmergencyContact);
 
             // 2. Send the updated copy to the Service
             try
             {
                 _patientService.UpdatePatient(EditingPatient);
+
+                EditingPatient.PhoneNo = FormatPhoneNumber(EditingPatient.PhoneNo);
+                EditingPatient.EmergencyContact = FormatPhoneNumber(EditingPatient.EmergencyContact);
 
                 // 3. Sync: Refresh the main list to show the new data
                 LoadAllPatients();
@@ -450,52 +489,61 @@ namespace HospitalManagement.ViewModel
         {
             try
             {
-                // 1. Map Age and Sex to the filter
+                // 1. Extract and Convert the Sex value
+                Sex? finalSexEnum = null; // Start as null (no filter)
+
+                if (SelectedSexFilter is Microsoft.UI.Xaml.Controls.ComboBoxItem item)
+                {
+                    string content = item.Content.ToString();
+
+                    // Try to convert "M" or "F" string to the Sex Enum
+                    if (Enum.TryParse<Sex>(content, out Sex result))
+                    {
+                        finalSexEnum = result;
+                    }
+                }
+
+                // 2. Map values to the filter
                 var filter = new PatientFilter
                 {
-                    minAge = MinAge,
-                    maxAge = MaxAge,
-                    sex = SelectedSexFilter
+                    minAge = (int?)MinAge,
+                    maxAge = (int?)MaxAge,
+                    sex = finalSexEnum // Now the types match perfectly!
                 };
 
-                // 2. Re-apply SearchQuery with the "13-digit shield"
+                // 3. Re-apply SearchQuery with the "13-digit shield"
                 if (!string.IsNullOrWhiteSpace(SearchQuery))
                 {
-                    // Only use CNP field if it satisfies the Service's 13-digit rule
                     if (SearchQuery.All(char.IsDigit) && SearchQuery.Length == 13)
                     {
                         filter.CNP = SearchQuery;
                     }
                     else
                     {
-                        // If it's partial numbers or text, treat as namePart
                         filter.namePart = SearchQuery;
                     }
                 }
 
-                // 3. Fetch from Service (Service validates Min/Max Age here)
+                // 4. Fetch from Service
                 var results = _patientService.SearchPatients(filter);
 
-                // 4. Sync Collection (Active only)
+                // 5. Sync Collection (Active only)
                 Patients.Clear();
-                // Use a basic filter to ensure we only show active patients in this view
                 var activeResults = results.Where(x => x.IsArchived == false);
 
                 foreach (var p in activeResults)
                 {
-                    // Ensure formatting is applied to the results
                     p.PhoneNo = FormatPhoneNumber(p.PhoneNo);
                     p.EmergencyContact = FormatPhoneNumber(p.EmergencyContact);
                     Patients.Add(p);
                 }
 
-                // 5. Update Visual State
+                // 6. Update Visual State
                 NoResultsFound = (Patients.Count == 0 && !string.IsNullOrWhiteSpace(SearchQuery));
             }
             catch (ArgumentException ex)
             {
-                // This catches the "Min age > Max age" or "Negative age" errors 
-                // thrown by the PatientService and shows them to the user.
+                // This catches "Min > Max" errors from your Service logic
                 ShowAlertAction?.Invoke(ex.Message);
             }
         }
@@ -517,14 +565,13 @@ namespace HospitalManagement.ViewModel
 
 
         // --- VM15: Mark As Deceased ---
-        private void MarkAsDeceased()
+        private async void MarkAsDeceased()
         {
             if (SelectedPatient == null) return;
 
             // 1. Trigger the Specialized Dialog (UI Callback)
             // We'll reuse our ShowDialog pattern to get the Date from the View
-            DateTime? chosenDate = RequestDateAction?.Invoke("Enter Date of Death:", "Mark as Deceased");
-
+            DateTime? chosenDate = await (RequestDateAction?.Invoke("Enter Date of Death:", "Mark as Deceased") ?? Task.FromResult<DateTime?>(null));
             if (chosenDate == null) return; // User cancelled
 
             // 2. Validation: Cannot be in the future
@@ -541,19 +588,24 @@ namespace HospitalManagement.ViewModel
                 return;
             }
 
+            string cleanPhone = SelectedPatient.PhoneNo.Replace(" ", "").Replace("-", "").Replace("+40", "0");
+            string cleanEmergency = SelectedPatient.EmergencyContact.Replace(" ", "").Replace("-", "").Replace("+40", "0");
+
+            SelectedPatient.PhoneNo = cleanPhone;
+            SelectedPatient.EmergencyContact = cleanEmergency;
+
             // 4. Update the Record
             SelectedPatient.Dod = chosenDate; // Setting the Date of Death
             SelectedPatient.IsArchived = true; // Securely move to locked archive state
 
-            // 5. Call Service to Save
-            _patientService.UpdatePatient(SelectedPatient);
+            try
+            {
+                // 5. Call Service to Save
+                _patientService.UpdatePatient(SelectedPatient);
 
-            // 6. Refresh and Notify
-            LoadAllPatients();
-            LoadArchivedPatients();
-
-            // This forces the "Edit" buttons to re-check if they should be disabled
-            OnPropertyChanged(nameof(IsNotDeceased));
+                // 6. Refresh and Notify
+                LoadAllPatients();
+                LoadArchivedPatients();
 
             ShowAlertAction?.Invoke($"{SelectedPatient.FirstName} has been marked as deceased. The record is now locked.");
         }
@@ -579,6 +631,13 @@ namespace HospitalManagement.ViewModel
         {
             System.Diagnostics.Debug.WriteLine($">> GHOST REPORTED FROM ADMIN AT {DateTime.Now} <<");
         }
+                // This forces the "Edit" buttons to re-check if they should be disabled
+                OnPropertyChanged(nameof(IsNotDeceased));
+                ShowAlertAction?.Invoke("The patient has been marked as deceased. The record is now locked and moved to the archive.");
+            }
+            catch (Exception ex) { 
+            ShowAlertAction?.Invoke($"Error: {ex.Message}"); }
+            }       
 
 
         // --- INotifyPropertyChanged Implementation ---
