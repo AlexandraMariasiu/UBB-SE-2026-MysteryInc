@@ -7,10 +7,15 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:entity="using:HospitalManagement.Entity"
+    xmlns:converters="using:HospitalManagement.Converters"
     mc:Ignorable="d"
     Title="Medical Staff Dashboard">
 
     <Grid Padding="24" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.Resources>
+            <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -39,22 +44,25 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Row="0" 
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
                        Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" 
                        Foreground="#D13438" 
                        FontWeight="SemiBold"
                        HorizontalAlignment="Center" 
                        Margin="0,0,0,16" />
 
-            <ListView ItemsSource="{Binding SearchResults}"
+            <ListView Grid.Row="1" Grid.Column="0"
+                      ItemsSource="{Binding SearchResults}"
                       SelectedItem="{Binding SelectedPatient, Mode=TwoWay}"
                       DoubleTapped="PatientList_DoubleTapped" 
                       SelectionMode="Single">
 
-            
-
-            <ListView.Header>
+                <ListView.Header>
                     <Grid Padding="12,8" Background="{ThemeResource LayerFillColorAltBrush}" CornerRadius="4">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*"/>
@@ -86,6 +94,23 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
+
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="20,0,0,0" Width="240" Spacing="15" VerticalAlignment="Top"
+                        Visibility="{Binding SelectedPatient, Converter={StaticResource NullToVisibilityConverter}}">
+
+                <TextBlock Text="Patient Actions" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,10"/>
+
+                <Button Content="Compatible Blood Donors" 
+                        Command="{Binding FindBloodDonorsCommand}" 
+                        HorizontalAlignment="Stretch" 
+                        Style="{StaticResource AccentButtonStyle}"/>
+
+                <Button Content="Request Organ Transplant" 
+                        Command="{Binding RequestTransplantCommand}" 
+                        HorizontalAlignment="Stretch" 
+                        Style="{StaticResource AccentButtonStyle}"/>
+
+            </StackPanel>
         </Grid>
 
         <StackPanel Grid.Row="2" 

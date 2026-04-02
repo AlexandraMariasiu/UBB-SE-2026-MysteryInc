@@ -12,7 +12,6 @@ using HospitalManagement.Repository;
 
 namespace HospitalManagement.ViewModel
 {
-    // Inherit from INotifyPropertyChanged so the UI knows when to update
     public class MedicalStaffViewModel : INotifyPropertyChanged
     {
         private string _searchQuery = string.Empty;
@@ -30,7 +29,6 @@ namespace HospitalManagement.ViewModel
                 OnPropertyChanged();
             }
         }
-        
 
         public string SearchQuery
         {
@@ -38,14 +36,12 @@ namespace HospitalManagement.ViewModel
             set { _searchQuery = value; OnPropertyChanged(); }
         }
 
-        // Binds to the error message text
         public string ErrorMessage
         {
             get => _errorMessage;
             set { _errorMessage = value; OnPropertyChanged(); }
         }
 
-        // Binds to the results table
         public ObservableCollection<Patient> SearchResults
         {
             get => _searchResults;
@@ -56,11 +52,14 @@ namespace HospitalManagement.ViewModel
         public ICommand BackToMainCommand { get; set; }
         public ICommand GhostSightingCommand { get; set; }
 
+        // NEW COMMANDS FOR MEDICAL STAFF ACTIONS
+        public ICommand FindBloodDonorsCommand { get; set; }
+        public ICommand RequestTransplantCommand { get; set; }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         public MedicalStaffViewModel()
         {
-            // 1. Initialize the Database connection and Services
             var dbContext = new HospitalDbContext();
             var patientRepo = new PatientRepository(dbContext);
             var historyRepo = new MedicalHistoryRepository(dbContext);
@@ -68,13 +67,15 @@ namespace HospitalManagement.ViewModel
 
             _patientService = new PatientService(patientRepo, historyRepo, recordRepo);
 
-            // 2. Setup Commands
             SearchCommand = new RelayCommand(ExecuteSearch);
+
+            // INITIALIZE THE NEW COMMANDS
+            FindBloodDonorsCommand = new RelayCommand(FindBloodDonors);
+            RequestTransplantCommand = new RelayCommand(RequestTransplant);
         }
 
         private void ExecuteSearch()
         {
-            // Reset the UI before searching
             ErrorMessage = string.Empty;
             SearchResults.Clear();
 
@@ -82,7 +83,6 @@ namespace HospitalManagement.ViewModel
 
             var filter = new PatientFilter();
 
-            // Logic: If the query is exactly 13 digits, it's a CNP. Otherwise, search by Name.
             if (SearchQuery.Length == 13 && SearchQuery.All(char.IsDigit))
             {
                 filter.CNP = SearchQuery;
@@ -98,12 +98,10 @@ namespace HospitalManagement.ViewModel
 
                 if (results == null || results.Count == 0)
                 {
-                    // Requirement: Exact exception message
                     ErrorMessage = "There are no patients with this name or CNP.";
                 }
                 else
                 {
-                    // Add matches to the table
                     foreach (var p in results)
                     {
                         SearchResults.Add(p);
@@ -114,6 +112,19 @@ namespace HospitalManagement.ViewModel
             {
                 ErrorMessage = "Database connection error: " + ex.Message;
             }
+        }
+
+        // --- EMPTY METHODS READY FOR FEATURE IMPLEMENTATION ---
+        private void FindBloodDonors()
+        {
+            if (SelectedPatient == null) return;
+            // Logic to calculate and display donors will go here
+        }
+
+        private void RequestTransplant()
+        {
+            if (SelectedPatient == null) return;
+            // Logic to handle transplant requests will go here
         }
 
         protected void OnPropertyChanged([CallerMemberName] string name = null)
