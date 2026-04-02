@@ -16,7 +16,7 @@ namespace HospitalManagement.View
         {
             this.InitializeComponent();
 
-            // Deschiderea Full Screen (Maximizatã)
+
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
             var appWindow = AppWindow.GetFromWindowId(windowId);
