@@ -131,6 +131,43 @@
           Padding="12,8" 
           CornerRadius="4" 
           Margin="0,0,0,10">
+            <Border Grid.Row="1" Background="#F8FAFC" CornerRadius="10" Padding="10" Margin="0,15,0,0">
+
+                <ListView Grid.Row="1" Grid.Column="0" 
+              ItemsSource="{Binding Patients}" 
+              SelectedItem="{Binding SelectedPatient, Mode=TwoWay}"
+              SelectionMode="Single"
+              Margin="0,10,0,0"
+              Padding="10"
+              BorderBrush="{ThemeResource SystemControlForegroundBaseLowBrush}" 
+              BorderThickness="1"
+              CornerRadius="8"
+              DoubleTapped="PatientListView_DoubleTapped">
+                    <ListView.Header>
+                        <Grid Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}" 
+                      Padding="12,8" CornerRadius="4" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="120"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="FIRST NAME" FontWeight="Bold" FontSize="12" Foreground="Gray" Grid.Column="0" Margin="10,0,0,0"/>
+                            <TextBlock Text="LAST NAME" FontWeight="Bold" FontSize="12" Foreground="Gray" Grid.Column="1" Margin="10,0,0,0"/>
+                            <TextBlock Text="SEX" FontWeight="Bold" FontSize="12" Foreground="Gray" Grid.Column="2" HorizontalAlignment="Center" Margin="10,0,0,0"/>
+                            <TextBlock Text="DOB" FontWeight="Bold" FontSize="11" Foreground="Gray" Grid.Column="3" Margin="40,0,0,0"/>
+                            <TextBlock Text="CNP" FontWeight="Bold" FontSize="11" Foreground="Gray" Grid.Column="4" Margin="45,0,0,0"/>
+                            <TextBlock Text="PHONE" FontWeight="Bold" FontSize="11" Foreground="Gray" Grid.Column="5" Margin="45,0,0,0"/>
+                            <TextBlock Text="EMERGENCY" FontWeight="Bold" FontSize="11" Foreground="Gray" Grid.Column="6" Margin="30,0,0,0"/>
+                        </Grid>
+                    </ListView.Header>
+
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="entity:Patient">
+                            <Grid Padding="12,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="100"/>
                                     <ColumnDefinition Width="100"/>

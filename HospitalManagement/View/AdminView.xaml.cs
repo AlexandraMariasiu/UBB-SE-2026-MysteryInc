@@ -225,6 +225,15 @@ namespace HospitalManagement.View
 
         private void OpenPage_Click(object sender, RoutedEventArgs e) => OpenStatisticsWindow();
 
+        private void PatientListView_DoubleTapped(object sender, Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs e)
+        {
+            if (_viewModel?.SelectedPatient != null)
+            {
+                var patientView = new PatientView(_viewModel.SelectedPatient, () => { });
+                patientView.Activate();
+            }
+        }
+
         public void Dispose() => _dbContext?.Dispose();
     }
 }
