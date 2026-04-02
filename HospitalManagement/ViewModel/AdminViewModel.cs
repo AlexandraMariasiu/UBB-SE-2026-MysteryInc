@@ -9,6 +9,7 @@ using HospitalManagement.Entity.Enums;
 using HospitalManagement.Integration;
 using HospitalManagement.Service;
 
+
 namespace HospitalManagement.ViewModel
 {
     public class AdminViewModel : INotifyPropertyChanged
