@@ -14,6 +14,8 @@
         <Grid.Resources>
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <converters:DateToStringConverter x:Key="DateToStringConverter"/>
+            
+            <converters:BoolToVisibilityConverter x:Key="BoolToVis"/>
         </Grid.Resources>
         
         <Grid.RowDefinitions>
@@ -40,6 +42,14 @@
                     <TextBlock Text="View Statistics"/>
                 </StackPanel>
             </Button>
+
+            <Button Content="I saw a ghost!"
+            Command="{Binding GhostSightingCommand}"
+            Background="#FFE779"
+            Foreground="#1E2A38"
+            FontWeight="Bold"
+            CornerRadius="4"
+            Padding="12,8"/>
         </StackPanel>
 
         <ListView Grid.Row="1" Grid.Column="0" 
@@ -118,5 +128,25 @@
                 <Button Content="Mark as Deceased" Command="{Binding MarkAsDeceasedCommand}" IsEnabled="{Binding IsNotDeceased}" HorizontalAlignment="Stretch"/>
             </StackPanel>
         </ScrollViewer>
+        
+        <Grid Grid.Row="0" Grid.RowSpan="2"
+          Grid.Column="0" Grid.ColumnSpan="2"
+          Background="#F0000000"
+          IsHitTestVisible="True"
+          Visibility="{Binding IsExorcismAlertVisible, Converter={StaticResource BoolToVis}}">
+            <Border MaxWidth="600" CornerRadius="16"
+            Background="#1A0000" BorderBrush="#CC0000" BorderThickness="3"
+            Padding="48,40" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel Spacing="20" HorizontalAlignment="Center">
+                    <FontIcon Glyph="&#xE7BA;" FontSize="72" HorizontalAlignment="Center"/>
+                    <TextBlock Text="CRITICAL PARANORMAL ACTIVITY DETECTED"
+                       Foreground="#FF3333" FontSize="20" FontWeight="Bold"
+                       TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock Text="Multiple sightings confirmed. Please CALL THE PRIEST immediately."
+                       Foreground="White" FontSize="16"
+                       TextAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

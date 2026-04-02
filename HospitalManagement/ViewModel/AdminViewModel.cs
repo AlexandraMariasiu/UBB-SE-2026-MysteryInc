@@ -30,6 +30,21 @@ namespace HospitalManagement.ViewModel
         public ICommand NavigateToStatisticsCommand { get; }
 
         private readonly PatientService _patientService;
+        private readonly GhostService _ghostService;
+
+        // --- Ghost logic ---
+        private bool _isExorcismAlertVisible;
+        public bool IsExorcismAlertVisible
+        {
+            get => _isExorcismAlertVisible;
+            set { _isExorcismAlertVisible = value; OnPropertyChanged(); }
+        }
+        public ICommand GhostSightingCommand { get; }
+
+
+
+
+
 
         // --- The currently clicked patient in the UI ---
         private Patient _selectedPatient;
@@ -195,6 +210,16 @@ namespace HospitalManagement.ViewModel
 
             MarkAsDeceasedCommand = new RelayCommand(MarkAsDeceased);
             NavigateToHomeCommand = new RelayCommand(() => { /* This gets overwritten by MainWindow */ });
+
+            // Ghost addition
+            _ghostService = GhostService.Instance;
+            _ghostService.ExorcismTriggered += (s, e) => IsExorcismAlertVisible = true;
+            GhostSightingCommand = new RelayCommand(() => _ghostService.SawAGhost());
+            IsExorcismAlertVisible = _ghostService.IsExorcismTriggered();
+
+
+
+
 
             LoadAllPatients();
 
