@@ -6,6 +6,7 @@ using HospitalManagement.ViewModel;
 using HospitalManagement.Repository;
 using HospitalManagement.Service;
 using HospitalManagement.Database;
+using Microsoft.UI.Xaml.Markup;
 using CommunityToolkit.WinUI;
 
 namespace HospitalManagement.View
@@ -61,6 +62,53 @@ namespace HospitalManagement.View
                             };
                             await alert.ShowAsync();
                         };
+
+                        // Organ Donor Dialog Logic
+                        vm.OpenOrganDonorDialogAction = async (deceasedPatient) =>
+                        {
+                            if (deceasedPatient == null)
+                            {
+                                vm.ShowAlertAction?.Invoke("Patient not selected.");
+                                return;
+                            }
+
+                            try
+                            {
+                                // Create Services
+                                var prRepo = new PrescriptionRepository(_dbContext);
+                                var tRepo = new TransplantRepository(_dbContext);
+                                var transplantService = new TransplantService(tRepo, pRepo, rRepo, new BloodCompatibilityService(pRepo));
+
+                                // Create ViewModel
+                                var organDonorViewModel = new OrganDonorViewModel(transplantService);
+                                organDonorViewModel.DeceasedPatient = deceasedPatient;
+
+                                // Create Dialog
+                                var dialog = new OrganDonorDialog();
+                                dialog.XamlRoot = rootElement.XamlRoot;
+
+                                // Initialize with confirmation callback
+                                dialog.Initialize(organDonorViewModel, (transplantId, donorId, score) =>
+                                {
+                                    try
+                                    {
+                                        // Perform the assignment
+                                        transplantService.AssignDonor(transplantId, donorId, score);
+                                        vm.ShowAlertAction?.Invoke($"Successfully assigned organ from donor {deceasedPatient.FirstName} {deceasedPatient.LastName}.");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        vm.ShowAlertAction?.Invoke($"Error assigning organ: {ex.Message}");
+                                    }
+                                });
+
+                                // Show the dialog
+                                await dialog.ShowAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                vm.ShowAlertAction?.Invoke($"Error opening organ donor dialog: {ex.Message}");
+                            }
                         vm.ConfirmAction = async (message, title) => // Added 'async' here
                         {
                             ContentDialog confirmDialog = new ContentDialog
