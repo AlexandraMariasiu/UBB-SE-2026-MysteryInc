@@ -40,6 +40,32 @@
                     <TextBlock Text="View Statistics"/>
                 </StackPanel>
             </Button>
+
+            <Button Content="Assign Organ Donor" Command="{Binding OpenOrganDonorCommand}" Style="{StaticResource AccentButtonStyle}"/>
+
+            <Button Command="{Binding ReportGhostCommand}"
+                    Background="#FFE779" 
+                    BorderBrush="Transparent"
+                    Padding="10,8" 
+                    CornerRadius="4"
+                    ToolTipService.ToolTip="Report Paranormal Activity">
+                
+                <Button.Resources>
+                    <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFD54F"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#1E2A38"/>
+                    <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#FFC107"/>
+                    <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#1E2A38"/>
+                </Button.Resources>
+
+                <Button.ContentTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE7BA;" Margin="0,0,8,0" FontSize="14" Foreground="#1E2A38"/>
+                            <TextBlock Text="I saw a ghost!" Foreground="#1E2A38" FontWeight="Bold"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </Button.ContentTemplate>
+            </Button>
         </StackPanel>
 
         <ListView Grid.Row="1" Grid.Column="0" 

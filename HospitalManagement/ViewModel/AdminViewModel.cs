@@ -153,6 +153,7 @@ namespace HospitalManagement.ViewModel
         // --- UI Callbacks ---
         public Func<string, string, bool> ConfirmAction { get; set; }
         public Action<string> ShowAlertAction { get; set; } // For the deceased warning
+        public Action<Patient> OpenOrganDonorDialogAction { get; set; } // For opening organ donor dialog
 
 
         // --- Commands bound to the View Buttons ---
@@ -164,6 +165,8 @@ namespace HospitalManagement.ViewModel
 
         public ICommand ArchivePatientCommand { get; }
         public ICommand DearchivePatientCommand { get; }
+        public ICommand OpenOrganDonorCommand { get; }
+        public ICommand ReportGhostCommand { get; }
 
         // --- Constructor ---
         public AdminViewModel(PatientService patientService)
@@ -193,6 +196,8 @@ namespace HospitalManagement.ViewModel
             ClearFilterCommand = new RelayCommand(ClearFilters);
 
             MarkAsDeceasedCommand = new RelayCommand(MarkAsDeceased);
+            OpenOrganDonorCommand = new RelayCommand(OpenOrganDonorDialog);
+            ReportGhostCommand = new RelayCommand(ReportGhost);
             NavigateToHomeCommand = new RelayCommand(() => { /* This gets overwritten by MainWindow */ });
 
             LoadAllPatients();
@@ -551,7 +556,29 @@ namespace HospitalManagement.ViewModel
             OnPropertyChanged(nameof(IsNotDeceased));
 
             ShowAlertAction?.Invoke($"{SelectedPatient.FirstName} has been marked as deceased. The record is now locked.");
-        }       
+        }
+
+        /// <summary>
+        /// Open the Organ Donor assignment dialog
+        /// </summary>
+        private void OpenOrganDonorDialog()
+        {
+            if (SelectedPatient == null || !SelectedPatient.IsDeceased || !SelectedPatient.IsDonor)
+            {
+                ShowAlertAction?.Invoke("Patient must be deceased and registered as a donor.");
+                return;
+            }
+
+            OpenOrganDonorDialogAction?.Invoke(SelectedPatient);
+        }
+
+        /// <summary>
+        /// Report ghost sighting (paranormal activity logging)
+        /// </summary>
+        private void ReportGhost()
+        {
+            System.Diagnostics.Debug.WriteLine($">> GHOST REPORTED FROM ADMIN AT {DateTime.Now} <<");
+        }
 
 
         // --- INotifyPropertyChanged Implementation ---
