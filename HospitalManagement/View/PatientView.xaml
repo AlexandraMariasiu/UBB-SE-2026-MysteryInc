@@ -75,7 +75,7 @@
                         <!-- Chronic Conditions -->
                         <StackPanel Spacing="5">
                             <TextBlock Text="Chronic Conditions" Foreground="Gray" FontSize="12"/>
-                            <TextBlock Text="{Binding MedicalHistory.ChronicConditions}" 
+                            <TextBlock Text="{Binding ChronicConditionsFormatted}" 
                                        Foreground="White" TextWrapping="WrapWholeWords" FontSize="12"/>
                         </StackPanel>
                     </StackPanel>

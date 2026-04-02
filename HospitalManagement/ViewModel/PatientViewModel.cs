@@ -33,7 +33,19 @@ namespace HospitalManagement.ViewModel
         public MedicalHistory MedicalHistory
         {
             get => _medicalHistory;
-            set { _medicalHistory = value; OnPropertyChanged(); }
+            set 
+            { 
+                _medicalHistory = value; 
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ChronicConditionsFormatted));
+            }
+        }
+
+        public string ChronicConditionsFormatted
+        {
+            get => _medicalHistory?.ChronicConditions != null && _medicalHistory.ChronicConditions.Count > 0
+                ? string.Join("; ", _medicalHistory.ChronicConditions)
+                : "None";
         }
 
         private ObservableCollection<MedicalRecord> _medicalRecords;
