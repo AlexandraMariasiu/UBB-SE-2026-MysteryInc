@@ -8,6 +8,7 @@ using HospitalManagement.Service;
 using HospitalManagement.Database;
 using Microsoft.UI.Xaml.Markup;
 using CommunityToolkit.WinUI;
+using HospitalManagement.ViewModel;
 
 namespace HospitalManagement.View
 {
@@ -198,6 +199,28 @@ namespace HospitalManagement.View
         {
             var statisticsWindow = new StatisticsWindow(_dbContext);
             statisticsWindow.Activate();
+        }
+
+        private void OpenArchive_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            if (this.Content is Microsoft.UI.Xaml.FrameworkElement fe && fe.DataContext is AdminViewModel vm)
+            {
+                vm.IsArchivedMode = true;
+            }
+            // Alternatively, if the Window itself holds the DataContext:
+            else if (this is Microsoft.UI.Xaml.Window w && w.Content is Microsoft.UI.Xaml.FrameworkElement feWindow && feWindow.DataContext is AdminViewModel vmWin)
+            {
+                vmWin.IsArchivedMode = true;
+            }
+            
+        }
+
+        private void BackToActive_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Content is FrameworkElement root && root.DataContext is AdminViewModel vm)
+            {
+                vm.IsArchivedMode = false;
+            }
         }
 
         private void OpenPage_Click(object sender, RoutedEventArgs e) => OpenStatisticsWindow();

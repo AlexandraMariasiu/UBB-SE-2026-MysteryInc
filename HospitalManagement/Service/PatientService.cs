@@ -102,10 +102,10 @@ namespace HospitalManagement.Service
 
             // 2. Audit Check: Prevent updates if the patient is currently Archived
             // Your diagram shows archivePatient(), so we check the IsArchived property
-            if (existingPatient.IsArchived)
-            {
-                throw new InvalidOperationException("Audit Error: This patient is archived. De-archive before updating.");
-            }
+            //if (existingPatient.IsArchived)
+            //{
+            //    throw new InvalidOperationException("Audit Error: This patient is archived. De-archive before updating.");
+            //}
 
             // 3. Identity Consistency Check: CNP and DOB must not change
             if (existingPatient.Cnp != data.Cnp || existingPatient.Dob.Date != data.Dob.Date)
