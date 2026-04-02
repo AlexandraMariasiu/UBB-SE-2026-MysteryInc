@@ -27,6 +27,21 @@ namespace HospitalManagement.ViewModel
             }
         }
 
+        private bool _isArchivedMode;
+        public bool IsActiveMode => !IsArchivedMode;
+
+        // Remember to update this whenever IsArchivedMode changes
+        public bool IsArchivedMode
+        {
+            get => _isArchivedMode;
+            set
+            {
+                _isArchivedMode = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsActiveMode)); // Notify the UI to flip the other one!
+            }
+        }
+
         public ICommand NavigateToHomeCommand { get; set; }
         public ICommand NavigateToStatisticsCommand { get; }
 
@@ -651,6 +666,8 @@ namespace HospitalManagement.ViewModel
 
             try
             {
+                SelectedPatient.PhoneNo = SelectedPatient.PhoneNo.Replace(" ", "").Replace("+40", "0");
+                SelectedPatient.EmergencyContact = SelectedPatient.EmergencyContact.Replace(" ", "").Replace("+40", "0");
                 // Mark as organ donor
                 SelectedPatient.IsDonor = true;
 
