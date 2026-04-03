@@ -145,16 +145,22 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Consultation Details" FontSize="18" FontWeight="Bold" Foreground="White" Grid.Column="0"/>
+                            <Button Content="🎡 Apply Discount" 
+                                    Command="{Binding ApplyDiscountCommand}" 
+                                    Background="#FFD700" Foreground="Black" 
+                                    CornerRadius="6" Padding="15,8" Grid.Column="1"
+                                    FontWeight="Bold"/>
                             <Button Content="View Prescription" 
                                     Command="{Binding ViewPrescriptionCommand}" 
                                     Background="#1B4965" Foreground="White" 
-                                    CornerRadius="6" Padding="15,8" Grid.Column="1"/>
+                                    CornerRadius="6" Padding="15,8" Grid.Column="2"/>
                             <Button Content="Export to PDF" 
                                     Command="{Binding ExportRecordCommand}" 
                                     Background="#0D7377" Foreground="White" 
-                                    CornerRadius="6" Padding="15,8" Grid.Column="2"/>
+                                    CornerRadius="6" Padding="15,8" Grid.Column="3"/>
                         </Grid>
 
                         <!-- Patient Name -->
@@ -227,41 +233,28 @@
                                            Foreground="#00FF00" FontSize="14" FontWeight="Bold"/>
                             </StackPanel>
 
-                            <!-- Apply Discount Button or Final Price -->
-                            <Grid ColumnSpacing="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                
-                                <!-- Discount Section Label -->
-                                <StackPanel Grid.Column="0" Spacing="5">
-                                    <TextBlock Text="Final Price" Foreground="Gray" FontSize="12" FontWeight="SemiBold"/>
-                                    <TextBlock Text="{Binding FinalPrice}" 
-                                               Foreground="White" FontSize="14"/>
-                                </StackPanel>
-                                
-                                <!-- Apply Discount Button (visible when discount not applied) or Result -->
-                                <Button Grid.Column="1" 
-                                        Content="🎡 Apply Discount" 
-                                        Command="{Binding ApplyDiscountCommand}"
-                                        Background="#FFD700" Foreground="Black"
-                                        CornerRadius="6" Padding="15,8"
-                                        Visibility="{Binding DiscountApplied, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
-                            </Grid>
+                            <!-- Final Price Display (only show after discount applied) -->
+                            <StackPanel Spacing="5"
+                                        Visibility="{Binding DiscountApplied, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="Final Price" Foreground="Gray" FontSize="12" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding FinalPrice}" 
+                                           Foreground="White" FontSize="14"/>
+                            </StackPanel>
 
                             <!-- Discount Info (visible after discount applied) -->
-                            <Border Background="#1B4965" CornerRadius="8" Padding="10"
+                            <Border Background="#0D6B3F" CornerRadius="8" Padding="10"
                                     Visibility="{Binding DiscountApplied, Converter={StaticResource BoolToVis}}">
                                 <StackPanel Spacing="5">
                                     <TextBlock Text="✓ Discount Applied!" Foreground="#00FF00" FontWeight="Bold" FontSize="12"/>
                                     <TextBlock Foreground="LightGray" FontSize="11">
                                         <Run Text="Discount: "/>
                                         <Run Text="{Binding SelectedMedicalRecord.DiscountApplied}"/>
+                                        <Run Text="%"/>
                                     </TextBlock>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
+                        
 
                         <!-- Prescription Details Section -->
                         <StackPanel Spacing="10" Visibility="{Binding SelectedPrescription, Converter={StaticResource NullToVisibilityConverter}}">

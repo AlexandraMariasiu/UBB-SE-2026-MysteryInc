@@ -92,9 +92,15 @@ namespace HospitalManagement.View
 
             // Show result
             _showResult = true;
-            OnPropertyChanged(nameof(ShowResult));
+            DiscountPercentage = SelectedDiscountPercentage;
             OnPropertyChanged(nameof(DiscountPercentage));
             OnPropertyChanged(nameof(FinalPrice));
+
+            // Make result border visible
+            if (this.FindName("ResultBorder") is Border resultBorder)
+            {
+                resultBorder.Visibility = Visibility.Visible;
+            }
 
             // Wait for user to see result (2 seconds)
             await Task.Delay(2000);
