@@ -20,7 +20,35 @@ namespace HospitalManagement.View
             {
                 rootElement.DataContext = ViewModel;
             }
+            this.Loaded += Page_Loaded;
         }
+
+        private async void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.CurrentPatient != null)
+            {
+                var dbContext = new HospitalManagement.Database.HospitalDbContext();
+                var patientRepo = new HospitalManagement.Repository.PatientRepository(dbContext);
+                var historyRepo = new HospitalManagement.Repository.MedicalHistoryRepository(dbContext);
+                var recordRepo = new HospitalManagement.Repository.MedicalRecordRepository(dbContext);
+
+                var patientService = new HospitalManagement.Service.PatientService(patientRepo, historyRepo, recordRepo);
+
+                // Check if the current patient is high risk
+                if (patientService.IsHighRiskPatient(ViewModel.CurrentPatient.Id))
+                {
+                    var dialog = new ContentDialog()
+                    {
+                        Title = "High Risk Patient Alert",
+                        Content = "Warning: This patient is flagged as High Risk because they have had more than 10 ER visits in the last 3 months.",
+                        CloseButtonText = "Acknowledge",
+                        XamlRoot = this.Content.XamlRoot
+                    };
+                    await dialog.ShowAsync();
+                }
+            }
+        }
+
 
         // Catches the double-click from the Expander list and loads the details on the right
         private void RecordList_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
