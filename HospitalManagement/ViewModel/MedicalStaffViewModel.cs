@@ -21,6 +21,14 @@ namespace HospitalManagement.ViewModel
         private readonly PatientService _patientService;
         private Patient _selectedPatient;
 
+        private readonly GhostService _ghostService;
+
+        private bool _isExorcismAlertVisible;
+        public bool IsExorcismAlertVisible
+        {
+            get => _isExorcismAlertVisible;
+            set { _isExorcismAlertVisible = value; OnPropertyChanged(); }
+        }
         public Patient SelectedPatient
         {
             get => _selectedPatient;
@@ -68,11 +76,16 @@ namespace HospitalManagement.ViewModel
 
             _patientService = new PatientService(patientRepo, historyRepo, recordRepo);
 
+            _ghostService = GhostService.Instance;
+            _ghostService.ExorcismTriggered += (s, e) => IsExorcismAlertVisible = true;
+            IsExorcismAlertVisible = _ghostService.IsExorcismTriggered();
+
             SearchCommand = new RelayCommand(ExecuteSearch);
 
             // INITIALIZE THE NEW COMMANDS
             FindBloodDonorsCommand = new RelayCommand(FindBloodDonors);
             RequestTransplantCommand = new RelayCommand(RequestTransplant);
+            GhostSightingCommand = new RelayCommand(() => _ghostService.SawAGhost());
         }
 
         private void ExecuteSearch()
