@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -6,7 +7,8 @@ using HospitalManagement.ViewModel;
 using HospitalManagement.Repository;
 using HospitalManagement.Service;
 using HospitalManagement.Database;
-
+using HospitalManagement.Entity;
+using System.Threading.Tasks;
 namespace HospitalManagement.View
 {
     public sealed partial class AdminView : Window, IDisposable
@@ -49,6 +51,7 @@ namespace HospitalManagement.View
                 {
                     if (rootElement.DataContext is AdminViewModel vm)
                     {
+                        // Alert Logic
                         vm.ShowAlertAction = async (message) =>
                         {
                             ContentDialog alert = new ContentDialog
@@ -59,6 +62,67 @@ namespace HospitalManagement.View
                                 XamlRoot = rootElement.XamlRoot
                             };
                             await alert.ShowAsync();
+                        };
+
+                        // Medical History Dialog - Show directly on UI thread
+                        vm.ShowMedicalHistoryAction = async (newPatientId) =>
+                        {
+                            try
+                            {
+                                var medicalHistoryDialog = new MedicalHistoryDialog();
+                                medicalHistoryDialog.XamlRoot = rootElement.XamlRoot;
+
+                                var result = await medicalHistoryDialog.ShowAsync();
+
+                                if (result == ContentDialogResult.Primary && medicalHistoryDialog.MedicalHistory != null)
+                                {
+                                    try
+                                    {
+                                        var hRepo = new MedicalHistoryRepository(_dbContext);
+                                        var patientRepo = new PatientRepository(_dbContext);
+                                        var recordRepo = new MedicalRecordRepository(_dbContext);
+                                        var patientService = new PatientService(patientRepo, hRepo, recordRepo);
+
+                                        medicalHistoryDialog.MedicalHistory.PatientId = newPatientId;
+                                        patientService.CreateMedicalHistory(newPatientId, medicalHistoryDialog.MedicalHistory, new List<Allergy>());
+
+                                        ContentDialog successAlert = new ContentDialog
+                                        {
+                                            Title = "Success",
+                                            Content = "Medical history saved successfully!",
+                                            CloseButtonText = "OK",
+                                            XamlRoot = rootElement.XamlRoot
+                                        };
+                                        await successAlert.ShowAsync();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        ContentDialog errorAlert = new ContentDialog
+                                        {
+                                            Title = "Error",
+                                            Content = $"Error saving medical history: {ex.Message}",
+                                            CloseButtonText = "OK",
+                                            XamlRoot = rootElement.XamlRoot
+                                        };
+                                        await errorAlert.ShowAsync();
+                                    }
+                                }
+                                else if (medicalHistoryDialog.WasSkipped)
+                                {
+                                    ContentDialog skipAlert = new ContentDialog
+                                    {
+                                        Title = "Skipped",
+                                        Content = "You can add medical history later from the patient profile.",
+                                        CloseButtonText = "OK",
+                                        XamlRoot = rootElement.XamlRoot
+                                    };
+                                    await skipAlert.ShowAsync();
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"ERROR SHOWING MEDICAL HISTORY DIALOG: {ex}");
+                            }
                         };
 
                         vm.ConfirmAction = async (message, title) =>
@@ -152,43 +216,6 @@ namespace HospitalManagement.View
                                 vm.ShowAlertAction?.Invoke($"Error opening organ donor dialog: {ex.Message}");
                             }
                         };
-
-                        // Medical History Dialog Logic - Opens after patient creation
-                        //vm.OpenMedicalHistoryDialogAction = async (newPatient) =>
-                        //{
-                        //    if (newPatient == null || newPatient.Id <= 0)
-                        //    {
-                        //        vm.ShowAlertAction?.Invoke("Invalid patient data.");
-                        //        return;
-                        //    }
-
-                        //    try
-                        //    {
-                        //        MedicalHistoryDialog dialog = new MedicalHistoryDialog();
-                        //        dialog.XamlRoot = rootElement.XamlRoot;
-                        //        dialog.SetPatientInfo(newPatient);
-
-                        //        var result = await dialog.ShowAsync();
-
-                        //        // If user clicked "Save Medical History" (Primary button)
-                        //        if (result == ContentDialogResult.Primary && dialog.MedicalHistory != null)
-                        //        {
-                        //            var hRepo = new MedicalHistoryRepository(_dbContext);
-                        //            var patientService = new PatientService(pRepo, hRepo, rRepo);
-
-                        //            patientService.CreateMedicalHistory(newPatient.Id, dialog.MedicalHistory);
-                        //            vm.ShowAlertAction?.Invoke("Medical history successfully added!");
-                        //        }
-                        //        else if (dialog.WasSkipped)
-                        //        {
-                        //            vm.ShowAlertAction?.Invoke("Medical history skipped. You can add it later from the patient's profile.");
-                        //        }
-                        //    }
-                        //    catch (Exception ex)
-                        //    {
-                        //        vm.ShowAlertAction?.Invoke($"Error creating medical history: {ex.Message}");
-                        //    }
-                        //};
                     }
                 };
 
