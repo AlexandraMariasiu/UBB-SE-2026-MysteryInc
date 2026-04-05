@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using HospitalManagement.Entity;
 using HospitalManagement.Entity.Enums;
+using HospitalManagement.Repository;
 using HospitalManagement.Service;
 
 namespace HospitalManagement.ViewModel
@@ -13,6 +14,8 @@ namespace HospitalManagement.ViewModel
     public class OrganDonorViewModel : INotifyPropertyChanged
     {
         private readonly TransplantService _transplantService;
+        private readonly PatientRepository _patientRepo;
+        private readonly MedicalHistoryRepository _historyRepo;
 
         // Deceased donor being processed
         private Patient _deceasedPatient;
@@ -82,9 +85,11 @@ namespace HospitalManagement.ViewModel
         public Action<int, int, float> OnAssignmentConfirmed { get; set; }
 
         // Constructor
-        public OrganDonorViewModel(TransplantService transplantService)
+        public OrganDonorViewModel(TransplantService transplantService, PatientRepository patientRepo, MedicalHistoryRepository historyRepo)
         {
             _transplantService = transplantService ?? throw new ArgumentNullException(nameof(transplantService));
+            _patientRepo = patientRepo ?? throw new ArgumentNullException(nameof(patientRepo));
+            _historyRepo = historyRepo ?? throw new ArgumentNullException(nameof(historyRepo));
 
             // Initialize organs list
             Organs = new ObservableCollection<string>
@@ -120,13 +125,19 @@ namespace HospitalManagement.ViewModel
                 TopMatches.Clear();
                 foreach (var transplant in matches)
                 {
-                    // Note: Patient is not loaded by default; we're using ReceiverId
+                    // Fetch the receiver patient and their medical history
+                    var receiver = _patientRepo.GetById(transplant.ReceiverId);
+                    var receiverHistory = receiver != null ? _historyRepo.GetByPatientId(receiver.Id) : null;
+                    
+                    var receiverName = receiver != null ? $"{receiver.FirstName} {receiver.LastName}" : "Unknown";
+                    var bloodType = receiverHistory?.BloodType?.ToString() ?? "Unknown";
+                    
                     var match = new TransplantMatch
                     {
                         TransplantId = transplant.TransplantId,
                         ReceiverId = transplant.ReceiverId,
-                        ReceiverName = "Loading...", // Will be updated if we fetch the patient
-                        BloodType = "Unknown",
+                        ReceiverName = receiverName,
+                        BloodType = bloodType,
                         CompatibilityScore = transplant.CompatibilityScore,
                         RequestDate = transplant.RequestDate,
                         WaitingDays = (DateTime.Now - transplant.RequestDate).Days
