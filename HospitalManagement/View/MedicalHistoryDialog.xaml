@@ -38,5 +38,56 @@
                      Height="80"
                      AcceptsReturn="True"/>
         </StackPanel>
+
+        <!-- Allergies Section -->
+        <StackPanel Spacing="5">
+            <TextBlock Text="Allergies" Foreground="Gray" FontSize="12" FontWeight="SemiBold"/>
+            
+            <!-- Allergy Input Row -->
+            <StackPanel Spacing="5" Orientation="Horizontal">
+                <ComboBox x:Name="AllergyNameEntry" 
+                         Width="150"/>
+                <ComboBox x:Name="AllergySeverityEntry" Width="100" SelectedIndex="0">
+                    <ComboBoxItem Content="Mild"/>
+                    <ComboBoxItem Content="Moderate"/>
+                    <ComboBoxItem Content="Severe"/>
+                    <ComboBoxItem Content="Anaphylactic"/>
+                </ComboBox>
+                <Button x:Name="AddAllergyButton" 
+                        Content="Add"
+                        Width="60"
+                        Click="AddAllergyButton_Click"/>
+            </StackPanel>
+
+            <!-- Allergies List -->
+            <ListBox x:Name="AllergiesList" 
+                     Height="120"
+                     Background="LightGray"
+                     Foreground="Black"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="250,*,80" Padding="8" Background="White">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Allergy.AllergyName}" 
+                                       VerticalAlignment="Center"
+                                       Foreground="Black"
+                                       FontSize="14"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Severity}" 
+                                       VerticalAlignment="Center"
+                                       Foreground="Black"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"/>
+                            <Button Grid.Column="2"
+                                    Content="Remove" 
+                                    HorizontalAlignment="Right"
+                                    Tag="{Binding}" 
+                                    Click="RemoveAllergyButton_Click"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
     </StackPanel>
 </ContentDialog>

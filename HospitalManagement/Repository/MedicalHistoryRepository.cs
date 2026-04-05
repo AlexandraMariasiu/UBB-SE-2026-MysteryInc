@@ -42,14 +42,41 @@ namespace HospitalManagement.Repository
             return null;
         }
 
-        public void Create(MedicalHistory history) //RP 14
+        public int Create(MedicalHistory history) //RP 14
         {
+            // Format ChronicConditions as comma-separated string
+            string chronicConditionsStr = history.ChronicConditions != null && history.ChronicConditions.Count > 0
+                ? string.Join(", ", history.ChronicConditions)
+                : null;
 
-            string query = $"INSERT INTO MedicalHistory (PatientID, BloodType, Rh) " +
+            string query = $"INSERT INTO MedicalHistory (PatientID, BloodType, Rh, ChronicConditions) " +
                            $"VALUES ({history.PatientId}, " +
                            $"{(history.BloodType.HasValue ? $"'{history.BloodType}'" : "NULL")}, " +
-                           $"{(history.Rh.HasValue ? $"'{history.Rh}'" : "NULL")})";
-            _context.ExecuteNonQuery(query);
+                           $"{(history.Rh.HasValue ? $"'{history.Rh}'" : "NULL")}, " +
+                           $"{(string.IsNullOrEmpty(chronicConditionsStr) ? "NULL" : $"'{chronicConditionsStr.Replace("'", "''")}'")});" +
+                           "SELECT SCOPE_IDENTITY();";
+
+            using (SqlDataReader reader = _context.ExecuteQuery(query))
+            {
+                if (reader.Read() && int.TryParse(reader[0].ToString(), out int historyId))
+                {
+                    return historyId;
+                }
+            }
+            return -1; // Error case
+        }
+
+        public void SaveAllergies(int historyId, List<(Allergy Allergy, string SeverityLevel)> allergies)
+        {
+            if (allergies == null || allergies.Count == 0)
+                return;
+
+            foreach (var (allergy, severity) in allergies)
+            {
+                string query = $"INSERT INTO PatientAllergies (AllergyID, HistoryID, SeverityLevel) " +
+                               $"VALUES ({allergy.AllergyId}, {historyId}, '{severity}')";
+                _context.ExecuteNonQuery(query);
+            }
         }
 
         public void Update(MedicalHistory history) // RP14

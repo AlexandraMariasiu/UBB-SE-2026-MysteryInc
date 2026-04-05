@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -9,6 +10,7 @@ using HospitalManagement.Service;
 using HospitalManagement.Database;
 using HospitalManagement.Entity;
 using System.Threading.Tasks;
+using System.Linq;
 namespace HospitalManagement.View
 {
     public sealed partial class AdminView : Window, IDisposable
@@ -69,8 +71,26 @@ namespace HospitalManagement.View
                         {
                             try
                             {
+                                // Load all available allergies from database
+                                var allergiesList = new List<Allergy>();
+                                string allergyQuery = "SELECT AllergyId, AllergyName, AllergyType, AllergyCategory FROM Allergy";
+                                using (SqlDataReader reader = _dbContext.ExecuteQuery(allergyQuery))
+                                {
+                                    while (reader.Read())
+                                    {
+                                        allergiesList.Add(new Allergy
+                                        {
+                                            AllergyId = (int)reader["AllergyId"],
+                                            AllergyName = reader["AllergyName"].ToString(),
+                                            AllergyType = reader["AllergyType"]?.ToString(),
+                                            AllergyCategory = reader["AllergyCategory"]?.ToString()
+                                        });
+                                    }
+                                }
+
                                 var medicalHistoryDialog = new MedicalHistoryDialog();
                                 medicalHistoryDialog.XamlRoot = rootElement.XamlRoot;
+                                medicalHistoryDialog.Initialize(allergiesList);
 
                                 var result = await medicalHistoryDialog.ShowAsync();
 
@@ -84,6 +104,8 @@ namespace HospitalManagement.View
                                         var patientService = new PatientService(patientRepo, hRepo, recordRepo);
 
                                         medicalHistoryDialog.MedicalHistory.PatientId = newPatientId;
+                                        
+                                        // CreateMedicalHistory will handle saving allergies from MedicalHistory.Allergies
                                         patientService.CreateMedicalHistory(newPatientId, medicalHistoryDialog.MedicalHistory, new List<Allergy>());
 
                                         ContentDialog successAlert = new ContentDialog
