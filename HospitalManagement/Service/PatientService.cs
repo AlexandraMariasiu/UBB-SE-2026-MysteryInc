@@ -102,6 +102,12 @@ namespace HospitalManagement.Service
                 throw new KeyNotFoundException($"Patient with ID {data.Id} not found.");
             }
 
+            // 2. Audit Check: Prevent updates if the patient is currently Archived
+            // Your diagram shows archivePatient(), so we check the IsArchived property
+            //if (existingPatient.IsArchived)
+            //{
+            //    throw new InvalidOperationException("Audit Error: This patient is archived. De-archive before updating.");
+            //}
 
             // 3. Identity Consistency Check: CNP and DOB must not change
             if (existingPatient.Cnp != data.Cnp || existingPatient.Dob.Date != data.Dob.Date)
@@ -118,40 +124,17 @@ namespace HospitalManagement.Service
 
             if (string.IsNullOrWhiteSpace(data.PhoneNo) || data.PhoneNo.Length != 10 || !data.PhoneNo.All(char.IsDigit))
             {
-                throw new ArgumentException("Validation Error: Phone number must be exactly 10 digits and contain only numbers.");
+                throw new ArgumentException("Validation Error: Phone number must be exactly 10 digits and contain no letters.");
             }
 
-            if (string.IsNullOrWhiteSpace(data.FirstName))
-            {
-                throw new ArgumentException("Validation Error: First Name cannot be empty.");
-            }
+            
+            //if (string.IsNullOrWhiteSpace(data.EmergencyContact) || !data.EmergencyContact.All(char.IsDigit) || data.EmergencyContact.Length != 10)
+            //{
+            //    throw new ArgumentException("Validation Error: Emergency contact must contain only numbers.");
+            //}
 
-            if (string.IsNullOrWhiteSpace(data.LastName))
-            {
-                throw new ArgumentException("Validation Error: Last Name cannot be empty.");
-            }
-
-            if (data.FirstName.Length > 100 || data.LastName.Length > 100)
-            {
-                throw new ArgumentException("Validation Error: Names cannot exceed 100 characters.");
-            }
-
-            if (!data.FirstName.All(c => char.IsLetter(c)))
-            {
-                throw new ArgumentException("Validation Error: First Name must contain only letters.");
-            }
-
-            if (!data.LastName.All(c => char.IsLetter(c)))
-            {
-                throw new ArgumentException("Validation Error: Last Name must contain only letters.");
-            }
-
-
-            if (string.IsNullOrWhiteSpace(data.EmergencyContact) || !data.EmergencyContact.All(char.IsDigit) || data.EmergencyContact.Length != 10)
-            {
-                throw new ArgumentException("Validation Error: Emergency contact must be exactly 10 digits and contain only numbers.");
-            }
-
+            // 5. Repository Call: Pass the clean object to the repository
+            // TODO: Uncomment once the Update method in PatientRepository
             _patientRepo.Update(data);
         }
 
@@ -226,8 +209,8 @@ namespace HospitalManagement.Service
 
                 // --- 2. CNP Validations ---
                 // Since the repo looks for an exact match, it must be valid if provided.
-                if (!string.IsNullOrWhiteSpace(filter.CNP) && !filter.CNP.All(char.IsDigit))
-                    throw new ArgumentException("Validation Error: CNP must contain only digits.");
+                if (!string.IsNullOrWhiteSpace(filter.CNP) && filter.CNP.Length != 13)
+                    throw new ArgumentException("Validation Error: CNP must be exactly 13 digits for an exact search.");
 
                 // --- 3. Date Validations ---
                 if (filter.lastUpdatedFrom.HasValue && filter.lastUpdatedTo.HasValue)
@@ -262,11 +245,13 @@ namespace HospitalManagement.Service
 
             // 3. Link the history to the patient and save
             history.PatientId = patientId;
-            _historyRepo.Create(history);
+            int historyId = _historyRepo.Create(history);
 
-            // 4. TODO: Save Allergies
-            // (When your team creates an AllergyRepository, loop through the 'allergies' list 
-            // and save them here, linking them to the newly created history.Id).
+            if (historyId > 0 && history.Allergies != null && history.Allergies.Count > 0)
+            {
+                // 4. Save allergies to PatientAllergies table
+                _historyRepo.SaveAllergies(historyId, history.Allergies);
+            }
         }
 
         /// <summary>

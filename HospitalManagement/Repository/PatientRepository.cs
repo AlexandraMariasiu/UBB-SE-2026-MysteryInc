@@ -271,9 +271,16 @@ namespace HospitalManagement.Repository
                            $"'{p.PhoneNo}', " +         // Quote
                            $"'{p.EmergencyContact}', " +// Quote
                            $"{(p.IsArchived ? 1 : 0)}, " + // No quotes for numbers
-                           $"{(p.IsDonor ? 1 : 0)})";      // No quotes for numbers
+                           $"{(p.IsDonor ? 1 : 0)}); " +      // No quotes for numbers
+                           "SELECT SCOPE_IDENTITY();";
 
-            _context.ExecuteNonQuery(query);
+            using (SqlDataReader reader = _context.ExecuteQuery(query))
+            {
+                if (reader.Read() && int.TryParse(reader[0].ToString(), out int newId))
+                {
+                    p.Id = newId;
+                }
+            }
         }
         //public void Update(Patient patientToUpdate)
         //{
