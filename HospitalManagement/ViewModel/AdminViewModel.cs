@@ -73,6 +73,7 @@ namespace HospitalManagement.ViewModel
                 OnPropertyChanged();
 
                 OnPropertyChanged(nameof(IsNotDeceased));
+                OnPropertyChanged(nameof(IsDeceased));
 
                 if (_selectedPatient != null)
                 {
@@ -183,6 +184,8 @@ namespace HospitalManagement.ViewModel
         // This property will be used in XAML to disable buttons: IsEnabled="{Binding IsNotDeceased}"
         public Func<string, string,Task<DateTime?>> RequestDateAction { get; set; }
         public bool IsNotDeceased => SelectedPatient != null && !SelectedPatient.IsDeceased;
+
+        public bool IsDeceased => SelectedPatient != null && SelectedPatient.IsDeceased;
 
         public ICommand MarkAsDeceasedCommand { get; }
         public ICommand MarkAsOrganDonorCommand { get; }

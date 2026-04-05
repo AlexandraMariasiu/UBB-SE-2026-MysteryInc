@@ -208,7 +208,7 @@ namespace HospitalManagement.View
                                 var transplantService = new TransplantService(tRepo, pRepo, rRepo, new BloodCompatibilityService(pRepo, hRepo), hRepo);
 
                                 // Create ViewModel
-                                var organDonorViewModel = new OrganDonorViewModel(transplantService);
+                                var organDonorViewModel = new OrganDonorViewModel(transplantService, pRepo, hRepo);
                                 organDonorViewModel.DeceasedPatient = deceasedPatient;
 
                                 // Create Dialog
@@ -222,11 +222,20 @@ namespace HospitalManagement.View
                                     {
                                         // Perform the assignment
                                         transplantService.AssignDonor(transplantId, donorId, score);
-                                        vm.ShowAlertAction?.Invoke($"Successfully assigned organ from donor {deceasedPatient.FirstName} {deceasedPatient.LastName}.");
+                                        
+                                        // Defer alert display until dialog is fully closed
+                                        rootElement.DispatcherQueue.TryEnqueue(() =>
+                                        {
+                                            vm.ShowAlertAction?.Invoke($"Successfully assigned organ from donor {deceasedPatient.FirstName} {deceasedPatient.LastName}.");
+                                        });
                                     }
                                     catch (Exception ex)
                                     {
-                                        vm.ShowAlertAction?.Invoke($"Error assigning organ: {ex.Message}");
+                                        // Defer error alert display until dialog is fully closed
+                                        rootElement.DispatcherQueue.TryEnqueue(() =>
+                                        {
+                                            vm.ShowAlertAction?.Invoke($"Error assigning organ: {ex.Message}");
+                                        });
                                     }
                                 });
 
